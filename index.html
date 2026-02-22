@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文学原型测试 | 灵魂手稿</title>
+    <!-- 基础库 CDN -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@200;500;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Noto Serif SC', serif;
+            background-color: #f2f0e9;
+            color: #3a3833;
+            -webkit-font-smoothing: antialiased;
+        }
+        .animate-fade-in {
+            animation: fadeIn 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .book-spine {
+            transition: all 0.4s ease;
+        }
+        .book-spine:hover {
+            transform: translateY(-8px);
+            filter: brightness(1.05);
+        }
+        .result-card {
+            box-shadow: 0 25px 60px -15px rgba(0,0,0,0.1);
+        }
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        const Icon = ({ name, size = 24, className = "" }) => {
+            const paths = {
+                ChevronRight: "M9 18l6-6-6-6",
+                RefreshCw: "M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15",
+                Quote: "M3 21c3 0 7-1 7-8V5c0-1.25-.75-2-2-2H3c-1.25 0-2 .75-2 2v7c0 1.25.75 2 2 2 0 4-1 6-2 6zm11 0c3 0 7-1 7-8V5c0-1.25-.75-2-2-2h-5c-1.25 0-2 .75-2 2v7c0 1.25.75 2 2 2 0 4-1 6-2 6z",
+                ArrowLeft: "M19 12H5M12 19l-7-7 7-7",
+                ArrowRight: "M5 12h14M12 5l7 7-7 7",
+                BookOpen: "M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z",
+                Layers: "M12 2L2 7l10 5 10-5-10-5z M2 17l10 5 10-5 M2 12l10 5 10-5",
+                Zap: "M13 2L3 14h9l-1 8 10-12h-9l1-8z",
+                Download: "M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4 M7 10l5 5 5-5 M12 15V3",
+                Bookmark: "M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z",
+                Compass: "M12 22a10 10 0 100-20 10 10 0 000 20zm0-10l4-4-4 4-4-4 4 4z",
+                History: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+            };
+            return (
+                <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                    <path d={paths[name] || ""} />
+                </svg>
+            );
+        };
+
+        const COLORS = {
+            bg: "#f2f0e9", textMain: "#3a3833", textSecondary: "#6d6b64",
+            accentYellow: "#e8ed2a", accentBlue: "#35afcb", accentGreen: "#a4c29b", border: "#dcd8cf"
+        };
+
+        const WRITERS_LIST = {
+            MALE: ["鲁迅", "老舍", "沈从文", "曹雪芹", "王小波", "史铁生", "莫言", "余华", "金庸", "钱钟书"],
+            FEMALE: ["张爱玲", "萧红", "林徽因", "三毛", "杨绛", "丁玲", "王安忆", "残雪", "迟子建", "舒婷"]
+        };
+
+        const WRITER_DATA = {
+            "鲁迅": { theme: "#b91c1c", secondary: "#1a1a1a", sub: "旧秩序的掘墓人", quote: "横眉冷对千夫指，俯首甘为孺子牛。", stats: [98, 45, 80, 50, 75], longDesc: "你的精神内核根植于对黑暗的生理性敏感。你拒绝装点太平，选择在那片焦土上种出更真实、更具痛感的生命。", context: "1918年《狂人日记》开启中国现代文学。其‘铁屋子’隐喻定义了五四新文学运动的启蒙基调，即在绝望中反抗绝望的写作。", books: [{title: "《呐喊》", desc: "在铁屋子中发出的第一声呼唤。"}] },
+            "老舍": { theme: "#92400e", secondary: "#451a03", sub: "平民世界的守望者", quote: "活着，这就是生活。", stats: [65, 70, 60, 55, 85], longDesc: "你扎根于平凡大地，在幽默中带着悲凉，记录平民的尊严。文学对你而言是对故土最深沉、最温润的注视。", context: "老舍是‘京派文学’的重要支柱。他将北京地域文化与世界文学技巧融合，开创了现代市民文学典范。", books: [{title: "《四世同堂》", desc: "民族魂魄的微观史诗。"}] },
+            "沈从文": { theme: "#0891b2", secondary: "#164e63", sub: "湘西水边的灵魂", quote: "我爱过一个正当最好年龄的人。", stats: [60, 50, 75, 98, 45], longDesc: "你认为生命应当像水一样自由。你在不断的流浪中寻找原始的完整，文字里流淌着未被污染的人性。", context: "湘西抒情文学宗师。以原始健康人性对抗都市物质腐败，构建了独属于东方的自然主义美学。", books: [{title: "《边城》", desc: "在湘西烟雨中寻找纯净人性。"}] },
+            "曹雪芹": { theme: "#ca8a04", secondary: "#713f12", sub: "大观园的守梦人", quote: "质本洁来还洁去，强于污淖陷渠沟。", stats: [40, 75, 45, 45, 98], longDesc: "你用人生构建了一个繁华又寂静的幻梦。你坚信极致的美本身即是真理，文学是安放灵魂的祭坛。", context: "古典章回小说高峰。将东方美学、哲学、风俗学融合，实现了从‘说书’到‘生命美学’的质变。", books: [{title: "《红楼梦》", desc: "东方美学的巅峰。"}] },
+            "王小波": { theme: "#1d4ed8", secondary: "#1e3a8a", sub: "逻辑与趣味的游侠", quote: "一个人只拥有此生此世是不够的，他还应该拥有诗意的世界。", stats: [88, 95, 65, 85, 75], longDesc: "你迷恋智性的趣味。你用逻辑对抗愚昧，文学对你而言是自由自在、不设防的脑力游戏。", context: "90年代浪漫主义旗手。以‘智慧与有趣’反抗宏大叙事的虚伪，重构了个体主义的理性防线。", books: [{title: "《黄金时代》", desc: "浪漫主义与逻辑的结合。"}] },
+            "史铁生": { theme: "#4b5563", secondary: "#111827", sub: "地坛里的静思者", quote: "死是一个必然会降临的节日。", stats: [80, 85, 55, 50, 98], longDesc: "你在磨难中展现了人的绝对尊严。你理解世界的荒谬，但选择在必然的‘局限’中确立人的主体性。", context: "新时期文学‘生命哲思’坐标。探讨人类存在局限与灵魂升华的终极追问，实现了文学向精神维度的靠拢。", books: [{title: "《我与地坛》", desc: "关于生命意义的终极追问。"}] },
+            "莫言": { theme: "#991b1b", secondary: "#450a0a", sub: "大地力量的通灵者", quote: "生死疲劳，从荒原到幻象。", stats: [85, 55, 92, 65, 80], longDesc: "你的笔触粗砺而充满想象力。你植根于乡土的原始生命力，将其升华为绚烂的叙事幻象。", context: "中国寻根文学代表。将民间精神与魔幻现实主义接轨，获得了诺贝尔文学奖的全球共鸣。", books: [{title: "《生死疲劳》", desc: "东方魔幻现实主义的巅峰。"}] },
+            "余华": { theme: "#1e293b", secondary: "#020617", sub: "苦难底色的生存论者", quote: "活着，活着本身就是唯一的理由。", stats: [75, 80, 55, 60, 95], longDesc: "你用最冷静的笔触书写最极端的痛。你理解苦难的沉重，但你更关注在那之上的“活着”。", context: "剥离了政治与道德，纯粹探讨个体如何在绝望的环境中保持生命最基本的坚韧与本能。", books: [{title: "《活着》", desc: "关于生存意志的最强音。"}] },
+            "金庸": { theme: "#854d0e", secondary: "#451a03", sub: "江湖秩序的构筑者", quote: "侠之大者，为国为民。", stats: [75, 60, 50, 70, 90], longDesc: "你心中有一个宏大的侠义世界。你创造传奇的同时，更在构建一种理想化的、知其不可而为之的道德秩序。", context: "新派武侠宗师。将武侠小说升华为‘成人的童话’，嵌入了深刻的历史反思与古典文化意蕴。", books: [{title: "《射雕英雄传》", desc: "侠义精神的现代图腾。"}] },
+            "钱钟书": { theme: "#0f766e", secondary: "#134e4a", sub: "围城外的冷眼智者", quote: "城外的人想冲进去，城里的人想逃出来。", stats: [35, 98, 30, 80, 55], longDesc: "你追求智性的极致。你俯瞰众生，用冷幽默解构人间的围城与尴尬。文学对你而言是智力博弈的游乐场。", context: "学人小说巅峰。对现代知识分子的精神困局进行了极其精准、尖酸且带有自省的解剖。", books: [{title: "《围城》", desc: "智性叙事的巅峰。"}] },
+            "张爱玲": { theme: "#4338ca", secondary: "#1e1b4b", sub: "苍凉月色下的审视者", quote: "生命是一袭华丽的袍，爬满了蚤子。", stats: [45, 95, 40, 60, 50], longDesc: "你倾向于心理深层的解构。你在琐碎的生活中捕捉命运的荒诞，文字里透着刺骨的清醒。", context: "海派文学异类。放弃宏大叙事，专攻人性的自私、琐碎与苍凉，开创了现代文学‘世俗感性’先河。", books: [{title: "《传奇》", desc: "在旧梦中寻找真实，将人性写到极致。"}] },
+            "萧红": { theme: "#7c3aed", secondary: "#4c1d95", sub: "呼兰河畔的灵性之光", quote: "那是呼兰河传，那是我的小城故事。", stats: [70, 45, 80, 95, 65], longDesc: "你有着惊人的直觉。你在荒凉的岁月里行走，用原始的笔触记录生命的孤独、阵痛与荒凉。", context: "三十年代‘东北作家群’核心。萧红以超越教条的‘灵性笔法’，对底层生命进行了诗性概括。", books: [{title: "《呼兰河传》", desc: "用灵性的笔调勾勒生命长卷。"}] },
+            "林徽因": { theme: "#be185d", secondary: "#701a75", sub: "人间的四月天", quote: "你是人间的四月天，笑响点亮了四面风。", stats: [30, 70, 45, 50, 95], longDesc: "你在理性的建筑与感性的诗歌间寻找平衡。你守护着审美，认为语言应创造神性的精神空间。", context: "现代派诗人代表。将建筑严谨结构引入中文诗歌，追求纯净，守护了一方审美圣殿。", books: [{title: "《你是人间的四月天》", desc: "在理性与感性之间捕捉理想。"}] },
+            "三毛": { theme: "#ea580c", secondary: "#7c2d12", sub: "沙漠中的自由之火", quote: "如果你给我的，和你给别人的一样，那我就不要了。", stats: [85, 40, 70, 95, 60], longDesc: "你对应着浪漫的存在主义。身份是在行走中被创造的，你的生命是一场不妥协的长途跋涉。", context: "80年代‘流浪文学’热潮缔造者。将生命转化为跨地域艺术实验，唤醒了对‘远方’与‘真我’的渴望。", books: [{title: "《撒哈拉的故事》", desc: "对自由最赤裸的呼唤。"}] },
+            "杨绛": { theme: "#166534", secondary: "#064e3b", sub: "洗净铅华的智者", quote: "我们仨，就剩下我一个了。", stats: [30, 92, 40, 50, 90], longDesc: "你在平淡中见真意。你的力量源于内心的极度安静与坚韧。文学对你而言是在智性之上对情感的守望。", context: "散文‘洗炼派’标志。将沉重历史伤痕转化为温润生命智慧，笔触克制、洁白、不着痕迹。", books: [{title: "《我们仨》", desc: "极简文字下的深情力量。"}] },
+            "丁玲": { theme: "#15803d", secondary: "#064e3b", sub: "时代洪流中的激荡者", quote: "人，只要有一种信念，有所追求，什么艰苦都能忍受。", stats: [90, 60, 55, 50, 90], longDesc: "你敢于在冲突中直面自我。你在历史的阵痛中挣扎，展现了极强韧的生命张力，是投身时代的火炬。", context: "映射了现代知识分子在‘自我解放’与‘民族救亡’之间的剧烈痛苦与最终抉择。", books: [{title: "《太阳照在桑干河上》", desc: "宏大进程中的个体阵痛。"}] },
+            "王安忆": { theme: "#be185d", secondary: "#701a75", sub: "城市肌理的织梦人", quote: "在繁华的尘埃里，寻找人世的逻辑。", stats: [45, 88, 70, 55, 80], longDesc: "你迷恋日常生活中的细碎。你在城市喧嚣中编织情感逻辑。文学对你而言是于凡尘中发现传奇的艺术。", context: "‘海派’当代传人。通过对弄堂生活的工笔细描，构建民间史诗，探讨城市精神的延续与断裂。", books: [{title: "《长恨歌》", desc: "上海弄堂里的情感史诗。"}] },
+            "残雪": { theme: "#581c87", secondary: "#2e1065", sub: "潜意识的梦游者", quote: "在极致的纯粹中，寻找灵魂的出口。", stats: [95, 40, 95, 80, 70], longDesc: "你对应着先锋的超现实主义。你的文字是通向潜意识深渊的秘径，创造出令人战栗的精神迷宫。", context: "先锋文学最彻底的存在。切断与外部反映论联系，专攻内部异化感，公认为‘中国的卡夫卡’。", books: [{title: "《黄泥街》", desc: "开启东方先锋文学的奇诡梦境。"}] },
+            "迟子建": { theme: "#0369a1", secondary: "#082f49", sub: "冰雪大地上的守火者", quote: "在寒冷的北方，灵魂也会开出温暖的花。", stats: [35, 65, 85, 90, 85], longDesc: "你的坐标在遥远的北极村。你迷恋自然的庄严与生命的坚韧。文学对你而言是漫长冬夜里的一盏油灯。", context: "自然主义浪漫写作代表。记录少数民族文明兴衰，为文学注入了阔大且悲悯的自然精神。", books: [{title: "《额尔古纳河右岸》", desc: "对古老民族文明的绝美挽歌。" }] },
+            "舒婷": { theme: "#e11d48", secondary: "#881337", sub: "独立与温柔的诗人", quote: "我必须是你近旁的一株木棉，作为树的形象和你站在一起。", stats: [40, 60, 85, 75, 80], longDesc: "你拥有一种充满力量的温柔。你强调自我的独立性，文学对你而言是对生命美好的最深情赞歌。", context: "‘朦胧诗’派核心女性声音。确立了现代中国女性‘平等、独立且富有深情’的感性宣言。", books: [{title: "《致橡树》", desc: "当代情感独立精神的圣经。"}] }
+        };
+
+        const QUESTIONS = [
+            { id: 1, text: "你从昏沉中睁眼，赤脚坐在一间被焊死的铁屋中央。周围的同类睡得很沉，鼾声平稳且麻木，空气里的氧气正贪婪地耗尽。你会：", options: [
+                { text: "拼尽最后的气力大声呐喊，哪怕惊醒的人将面临更绝望的苦楚。", target: "鲁迅" },
+                { text: "盘腿坐下，冷静计算氧气耗竭的秒数，对集体宿命产生一种冷幽默感。", target: "钱钟书" },
+                { text: "摸索出碳笔，在铁壁描摹一朵凋零的莲花，试图用美去驯服死亡的丑陋。", target: "林徽因" },
+                { text: "闭目凝神，让灵魂在瞬息间幻化成飞离地表的鸟，留给世界一具空壳。", target: "三毛" }
+            ]},
+            { id: 2, text: "湘西黄昏，你独自守着一艘长满苔藓的渡船。河水静谧得让人心慌，许诺出现的人始终未现，野花随波无声飘远。你会：", options: [
+                { text: "对着雾气哼起歌谣，坚信这份“等不来”本身，就是生命里神圣的修行。", target: "舒婷" },
+                { text: "觉得这流动的河、破船与无奈的夕阳，就是宇宙最丰饶且哀伤的真相。", target: "沈从文" },
+                { text: "在沙滩默默涂写，将孤独归类封存，在宁静中筑起守望情感的围墙。", target: "杨绛" },
+                { text: "感到腿部的麻木正在蔓延，但深知等待是生命必须交付的壮烈劳作。", target: "史铁生" }
+            ]},
+            { id: 3, text: "旧上海弄堂，月亮像一团揉皱发霉的丝绸。你身着磨损的旗袍，看着月光照进盛着残酒与烟灰的瓷杯。那一刻你觉得：", options: [
+                { text: "点燃一支烟冷笑：所谓的繁华，不过是这华丽袍子上拼命爬动的蚤子。", target: "张爱玲" },
+                { text: "被剧烈的宿命感击中，想为这残破的月光写一首祭奠整个时代的葬歌。", target: "曹雪芹" },
+                { text: "撕开紧绷的盘扣，这弄堂像是一张细密的网，你只想立刻跑向旷野。", target: "三毛" },
+                { text: "握紧拳头，觉得颓废月色是毒药，文字应当化作刺穿虚伪的投枪。", target: "丁玲" }
+            ]},
+            // 后续题目保持逻辑深度与简洁风格
+            { id: 4, text: "你坐在荒芜了百年的地坛中，四周除了落叶的沙沙声，只有死一般的寂静。此时你的双腿已无法行走，你会：", options: [
+                { text: "意识到“死是一个必然降临的节日”，平静地与这片荒废的时间达成和解。", target: "史铁生" },
+                { text: "通过树木年轮的刻痕，试图解码宇宙那套超越个人肉身苦难的逻辑。 ", target: "王小波" },
+                { text: "将这满园的凄冷化作一首给生命的挽歌，记录下每一寸泥土在孤独里的颤动。", target: "萧红" },
+                { text: "坚信只要思想还在雪地里游历，这具残破的躯壳便是我通向万物神性的坐标。", target: "迟子建" }
+            ]},
+            { id: 5, text: "如果命运让你误入大观园。当所有人在酒席上欢笑时，你却被某种预感击中。你会：", options: [
+                { text: "做一个清醒得近乎残酷的旁观者，冷眼看那鲜花着锦后的“白茫茫大地真干净”。", target: "王安忆" },
+                { text: "宁愿在最繁华的一刻化作一阵轻烟，用自毁来守护那份不容玷污的纯净。", target: "曹雪芹" },
+                { text: "做那个摔碎通灵宝玉的疯癫叛逆者，我要看这虚假的秩序在瞬间彻底崩塌。", target: "残雪" },
+                { text: "毫不留恋地背起行囊离开园子，去大荒原做一株拥有绝对自由的草。", target: "三毛" }
+            ]},
+            { id: 6, text: "面对时代那股巨大的、带有血腥味的洪流，所有人都被裹挟着前行。你的姿态会是：", options: [
+                { text: "逆流而上，哪怕注定被浪潮拍得粉身碎骨，也要在被吞噬前发出咆哮。", target: "莫言" },
+                { text: "在岸边搭起一座简陋的书斋，冷静地记录这洪流的流速与泥沙。", target: "钱钟书" },
+                { text: "随波逐流但紧紧抱住一块漂流木，在漂泊中寻找彼岸尚未被污染的灵魂。", target: "沈从文" },
+                { text: "在水底构建一座属于自己的理想水晶宫，拒绝承认这浑浊现实的存在。", target: "林徽因" }
+            ]},
+            { id: 7, text: "在大兴安岭冰雪大地上，你看到人们在严寒中麻木、贫穷地重复生活。你的第一反应是：", options: [
+                { text: "感到一种彻骨的孤独，想把这一地鸡毛的生活写成荒凉的童话。", target: "萧红" },
+                { text: "点燃一把名为“愤怒”的火把，想要烧掉这冻结了千年的底层精神僵局。", target: "鲁迅" },
+                { text: "在极寒中寻找那抹温润的、关于善良的光辉，给予生命一点暖意。", target: "迟子建" },
+                { text: "像个医生，冷静分析这贫困与愚昧之间环环相扣的进化逻辑与必然。", target: "余华" }
+            ]},
+            { id: 8, text: "一个面目模糊的人递给你一瓶能忘却过去痛苦的“忘情水”。喝下它，你会获得平庸的快乐。你会：", options: [
+                { text: "推开瓶子。因为痛苦是确认我这个“主体”依然真实活着的唯一证据。", target: "史铁生" },
+                { text: "倒掉它。没有了过去那些刺痛的记忆，我的智性拼图就不再完整了。", target: "杨绛" },
+                { text: "只喝下一半。留下美的部分，将那些粗砺伤痕交给时间去漂白。", target: "舒婷" },
+                { text: "把它泼向大地。我此时此刻只需要自由的风和未知的远方。", target: "王小波" }
+            ]},
+            { id: 9, text: "如果由你来定义“江湖”，你理想中的那个世界应当是：", options: [
+                { text: "“侠之大者，为国为民”，是一场知其不可为而为之的英雄道义。", target: "金庸" },
+                { text: "一场荒诞的文字游戏，在消解权力的同时彻底解构所谓的英雄。", target: "王小波" },
+                { text: "烟雨朦胧的湘西，是每个人心中永远回不去、但永远柔软的故乡。", target: "沈从文" },
+                { text: "变幻莫测的棋局，规则隐秘且冷酷，唯有洞察规律者方能胜出。", target: "钱钟书" }
+            ]},
+            { id: 10, text: "城里的人想冲出去，城外的人想进来。面对围城，你会：", options: [
+                { text: "站在斑驳的城墙上发出刻薄而智慧的嘲笑，看穿人性的荒唐。", target: "张爱玲" },
+                { text: "用一辈子拆掉这堵高墙，哪怕墙下露出来的是另一座深渊。", target: "鲁迅" },
+                { text: "在城门边种满木棉花，让这种无奈也变得具有独立的姿态。", target: "舒婷" },
+                { text: "不进也不出。我只在城外的荒原流浪，直到天黑透。", target: "三毛" }
+            ]},
+            { id: 11, text: "关于“活着”，你认为最根本的真理是：", options: [
+                { text: "忍受苦难并在苦难中确立人的主体尊严。", target: "余华" },
+                { text: "寻找那些被规则掩盖的有趣与诗意。", target: "王小波" },
+                { text: "在平凡庸碌中捕捉那抹神性的火光。", target: "老舍" },
+                { text: "它是对历史权力的一次次绝望对抗。", target: "莫言" }
+            ]},
+            { id: 12, text: "文字的气味应当是：", options: [
+                { text: "火药与灰烬：刚经历完一场刺穿黑暗的激烈战斗。", target: "丁玲" },
+                { text: "墨香与尘埃：在古老书堆里沉淀下来的安静味道。", target: "杨绛" },
+                { text: "雪中腊梅香：高傲、清冷且绝对纯净的味道。", target: "林徽因" },
+                { text: "旷野草木味：自由、潮湿且永不停留的味道。", target: "萧红" }
+            ]},
+            { id: 13, text: "镜子照见死期，你的内心反应是：", options: [
+                { text: "精确地记录下那个时间，在倒计时中以逻辑的方式收尾。", target: "钱钟书" },
+                { text: "打碎镜子：即便宿命已定，也要在碎片中完成最后狂舞。", target: "史铁生" },
+                { text: "在镜面画满繁复花朵，用审美去覆盖残酷且苍白的真相。", target: "曹雪芹" },
+                { text: "背对镜子继续前行：终点在哪里我不在乎，我在乎路。", target: "迟子建" }
+            ]},
+            { id: 14, text: "如果你被囚禁在地牢。在腐烂前，你会在墙上刻下：", options: [
+                { text: "一串隐晦的坐标，指引后人找到通往真相的秘密暗道。", target: "王安忆" },
+                { text: "一句对这暴虐王权的永恒诅咒，意志也要化作厉鬼纠缠。", target: "鲁迅" },
+                { text: "一朵正在静静凋零的玫瑰，守护最后的一点高贵审美。", target: "林徽因" },
+                { text: "“此地不留行”，记录我的灵魂曾停驻，但从未被枷锁锁住。", target: "三毛" }
+            ]},
+            { id: 15, text: "故事推向一个注定会失败、崩塌的结局时，你会：", options: [
+                { text: "让他正面迎接这种毁灭，在绝望中确立主体尊严。", target: "余华" },
+                { text: "让他消失在漫天烟雾中，给读者留下绝美且幻灭的遗憾。", target: "曹雪芹" },
+                { text: "细致解剖这一悲剧的因果链条，让失败本身成为教材。", target: "钱钟书" },
+                { text: "对着虚无大笑三声，带着复仇的嘲讽去戏谑编造者。", target: "残雪" }
+            ]},
+            { id: 16, text: "对于名为“故乡”的地方，你心底的感受倾向于：", options: [
+                { text: "一个已经腐烂、发臭，但受伤时不得不回去疗伤的祭坛。", target: "莫言" },
+                { text: "一幅泛黄的、带有霉味的旧画卷，我偶尔想念但不愿打开。", target: "老舍" },
+                { text: "一张褪色的、比例错误的旧地图，我已找不到有效坐标。", target: "三毛" },
+                { text: "用来反衬我现在精神自由度的、充满陈腐规则的参照物。", target: "王小波" }
+            ]},
+            { id: 17, text: "胜利的一刻，你内心升起的反思是：", options: [
+                { text: "由于洞察了胜利背后那种更深层次的荒谬与虚无，感到寒意。", target: "张爱玲" },
+                { text: "由于这场胜利必须付出的惨烈牺牲，产生神圣的悲情。", target: "丁玲" },
+                { text: "由于彻底摧毁了那个压迫性的旧秩序，感到的复仇性快慰。", target: "鲁迅" },
+                { text: "终于达成了一次智性的、逻辑的闭环，感到的实验室平静。", target: "钱钟书" }
+            ]},
+            { id: 18, text: "如果你能拥有“文学魔法”，你希望它是：", options: [
+                { text: "能一眼看穿虚伪背后的真相，并用文字将其彻底公开化。", target: "杨绛" },
+                { text: "能用笔尖让已经凋零的美好，在纸页上真实地复活一秒。", target: "曹雪芹" },
+                { text: "让受压迫的灵魂瞬间觉醒，并产生不计后果的反抗冲动。", target: "鲁迅" },
+                { text: "能让我本人瞬间移动到任何一个没人认识我的异国他乡。", target: "三毛" }
+            ]},
+            { id: 19, text: "路边看到卑微低声下气的人，你会：", options: [
+                { text: "愤怒于这个吃人系统的压迫，想彻底砸烂它的生理冲动。", target: "丁玲" },
+                { text: "深沉感慨“活着”本身就是隐喻，具有庄严的厚度。", target: "余华" },
+                { text: "避开目光。过于粗糙的现实会擦伤内心精致的审美体验。", target: "林徽因" },
+                { text: "观察他生存的策略与伪装，思考背后庞杂博弈的逻辑。", target: "王安忆" }
+            ]},
+            { id: 20, text: "灵魂幻化成文学圣器，最契合的形态是：", options: [
+                { text: "一把能在深夜剖开一切虚伪、具有解剖刀质感的利刃。", target: "鲁迅" },
+                { text: "一架能观测星体轨迹、具有精密推导能力的望远镜。", target: "钱钟书" },
+                { text: "一个能装下整片晚霞与忧郁泪水的怀旧墨水瓶。", target: "舒婷" },
+                { text: "一张永远折叠不完、通往未知异乡的远行地图。", target: "迟子建" }
+            ]},
+            { id: 21, text: "叙事中长久的“沉默”，最理想的质感是：", options: [
+                { text: "像一段加密的电报，等待着理性的解码。", target: "杨绛" },
+                { text: "像深渊边缘的屏息，预示着英雄在坠落前最后的悲歌。", target: "史铁生" },
+                { text: "像即将引爆的炸弹，沉默只是为了更猛烈的反叛。", target: "丁玲" },
+                { text: "像爱人的一声叹息，是任何语言都无法承载的感性。", target: "林徽因" }
+            ]},
+            { id: 22, text: "主角站在荒原面对神灵沉默，他的回答是：", options: [
+                { text: "拔出残破的长剑，向苍穹发起一场必败、但必行的挑战。", target: "金庸" },
+                { text: "放声大笑，意识到所谓“神灵”不过是人类自造的伪命题。", target: "王小波" },
+                { text: "转身走入沙漠，在那神不曾触及的沙丘中发明新真理。", target: "三毛" },
+                { text: "用华丽诗篇填满空位，创造一个属于自我的瞬间神圣。", target: "舒婷" }
+            ]},
+            { id: 23, text: "文字世界坍塌，只允许保留唯一一个词语：", options: [
+                { text: "“但是” —— 代表了永远的反抗与不服从的可能性。", target: "鲁迅" },
+                { text: "“因为” —— 守住了因果底线，确保了理性的生存点。", target: "钱钟书" },
+                { text: "“也许” —— 在审美的朦胧中保留余地，不至于让真实太刺眼。", target: "残雪" },
+                { text: "“再会” —— 预示下一场未知启程，代表灵魂永远在迁徙。", target: "迟子建" }
+            ]},
+            { id: 24, text: "文学里的“风景”最好的状态是：", options: [
+                { text: "布满荆棘的荒原，用来试炼英雄骨骼与意志的战道。", target: "史铁生" },
+                { text: "由无数隐喻构成的迷雾森林，隐藏着通往潜意识的线索。", target: "莫言" },
+                { text: "半梦半醒间的江南烟雨，灵魂逃离现实唯一的避难所。", target: "曹雪芹" },
+                { text: "遥远北极村的冰雪大地，在严寒中守望最后的人性。", target: "迟子建" }
+            ]},
+            { id: 25, text: "面对厚重如山的传统文化，主角的抉择是：", options: [
+                { text: "背负着沉重的遗产，在艰难行走中完成古典守望。", target: "老舍" },
+                { text: "冷静拆解它，将腐朽符号转化成现代叙事的知性砖石。", target: "钱钟书" },
+                { text: "亲手烧毁它，在废墟之上自由灵魂才有广阔的操场。", target: "残雪" },
+                { text: "美化它，在墨色与词藻中重构从未存在的极致盛世。", target: "林徽因" }
+            ]},
+            { id: 26, text: "时间作为实体的“纸张”，你会如何涂抹？", options: [
+                { text: "编织一张庞大的网，将所有偶然网罗在因果逻辑中。", target: "王安忆" },
+                { text: "刻下一道道深邃且带血的划痕，记录对抗遗忘的疤痕。", target: "余华" },
+                { text: "画上一些漫无目的、潦草且狂气的线条，随风飘向空白。", target: "三毛" },
+                { text: "刷上一层又一层半透明彩墨，构建虚幻华丽的厚度感。", target: "残雪" }
+            ]},
+            { id: 27, text: "你倾向于让叙述者在文本中扮演哪种角色？", options: [
+                { text: "上帝般的旁观者，冷静记录所有参数，不带感情。", target: "钱钟书" },
+                { text: "激情的参与者，每一个字都流淌着血与泪的冲突。", target: "鲁迅" },
+                { text: "梦游者，游走在现实边缘，时刻准备跳入潜意识深渊。", target: "残雪" },
+                { text: "闯入者，带着智性嘲弄，时刻准备跳出叙事冒犯读者。", target: "王小波" }
+            ]},
+            { id: 28, text: "面对神秘主义，你的文学态度是：", options: [
+                { text: "“神秘是审美的温床。一旦解释清楚，美就凋谢了。”", target: "林徽因" },
+                { text: "“神秘只是理性的边疆。这层迷雾会被逻辑彻底穿透。”", target: "杨绛" },
+                { text: "“神秘是真相的掩体。我们要用斗争逼迫真相露出原形。”", target: "鲁迅" },
+                { text: "“神秘是永远的地平线。我们追逐它但深知无法抵达。”", target: "萧红" }
+            ]},
+            { id: 29, text: "必须为对手设计最终宿命，你希望他：", options: [
+                { text: "拥有比我更坚定的反抗精神，甚至反过来审判我的软弱。", target: "鲁迅" },
+                { text: "成为智性镜像，在逻辑巅峰进行永无止境的博弈。", target: "王小波" },
+                { text: "成为理想人格载体，替我在文字里完成纯净的救赎。", target: "林徽因" },
+                { text: "成为命运最冷酷的对照，在毁灭中映照主体的尊严。", target: "余华" }
+            ]},
+            { id: 30, text: "文字在宇宙中最终的形态应当是：", options: [
+                { text: "一把永不熄灭的火炬，点燃读者同时也毁灭写作者。", target: "鲁迅" },
+                { text: "一个完美的圆环，首尾相接，逻辑自闭且神圣冷漠。", target: "杨绛" },
+                { text: "一条无限延伸至地平线尽头的、极其模糊的直线。", target: "沈从文" },
+                { text: "一片散落在虚空中的、轻盈且带有幻觉感的羽毛。", target: "残雪" }
+            ]}
+        ];
+
+        const LibraryIllustration = () => {
+            const shelfOne = [];
+            const shelfTwo = [];
+            for(let i=0; i<5; i++) {
+                shelfOne.push({ name: WRITERS_LIST.MALE[i], gender: 'm' });
+                shelfOne.push({ name: WRITERS_LIST.FEMALE[i], gender: 'f' });
+            }
+            for(let i=5; i<10; i++) {
+                shelfTwo.push({ name: WRITERS_LIST.FEMALE[i], gender: 'f' });
+                shelfTwo.push({ name: WRITERS_LIST.MALE[i], gender: 'm' });
+            }
+            return (
+                <svg viewBox="0 0 400 350" className="w-full h-full drop-shadow-md">
+                    <rect x="45" y="45" width="310" height="270" fill="none" stroke={COLORS.textMain} strokeWidth="2" rx="2" />
+                    <line x1="45" y1="180" x2="355" y2="180" stroke={COLORS.textMain} strokeWidth="1.5" />
+                    <line x1="45" y1="315" x2="355" y2="315" stroke={COLORS.textMain} strokeWidth="3" />
+                    {shelfOne.map((item, i) => (
+                        <g key={`s1-${i}`} transform={`translate(${60 + i * 28}, 80)`} className="book-spine">
+                            <rect width="24" height="100" fill="white" stroke={COLORS.textMain} strokeWidth="1" />
+                            <circle cx="12" cy="15" r="1.5" fill={item.gender === 'm' ? COLORS.accentBlue : COLORS.accentGreen} opacity="0.6" />
+                            <text x="12" y="55" writingMode="tb" textAnchor="middle" fontSize="10" fill={COLORS.textMain} style={{letterSpacing: '2px', fontWeight: i%2===0 ? 'bold' : 'normal'}}>{item.name}</text>
+                        </g>
+                    ))}
+                    {shelfTwo.map((item, i) => (
+                        <g key={`s2-${i}`} transform={`translate(${60 + i * 28}, 215)`} className="book-spine">
+                            <rect width="24" height="100" fill="white" stroke={COLORS.textMain} strokeWidth="1" />
+                            <circle cx="12" cy="15" r="1.5" fill={item.gender === 'm' ? COLORS.accentBlue : COLORS.accentGreen} opacity="0.6" />
+                            <text x="12" y="55" writingMode="tb" textAnchor="middle" fontSize="10" fill={COLORS.textMain} style={{letterSpacing: '2px', fontWeight: i%2!==0 ? 'bold' : 'normal'}}>{item.name}</text>
+                        </g>
+                    ))}
+                    <circle cx="340" cy="65" r="20" fill={COLORS.accentYellow} opacity="0.25" />
+                </svg>
+            );
+        };
+
+        function App() {
+            const [step, setStep] = useState('welcome');
+            const [currentQuestion, setCurrentQuestion] = useState(0);
+            const [scores, setScores] = useState({});
+            const [history, setHistory] = useState([]);
+            const [result, setResult] = useState(null);
+            const [isSaving, setIsSaving] = useState(false);
+            
+            const radarCanvas = useRef(null);
+            const captureRef = useRef(null);
+            const chartRef = useRef(null);
+
+            const handleAnswer = (target) => {
+                const currentScores = { ...scores };
+                setHistory([...history, { scores: { ...currentScores }, currentQuestion }]);
+                const newScores = { ...currentScores, [target]: (currentScores[target] || 0) + 1 };
+                setScores(newScores);
+                
+                if (currentQuestion < QUESTIONS.length - 1) {
+                    setCurrentQuestion(currentQuestion + 1);
+                } else {
+                    const topWriterName = Object.keys(newScores).reduce((a, b) => (newScores[a] || 0) > (newScores[b] || 0) ? a : b);
+                    setResult({ ...WRITER_DATA[topWriterName], name: topWriterName });
+                    setStep('result');
+                    window.scrollTo(0, 0);
+                }
+            };
+
+            const handleBack = () => {
+                if (history.length > 0) {
+                    const lastState = history[history.length - 1];
+                    setScores(lastState.scores);
+                    setCurrentQuestion(lastState.currentQuestion);
+                    setHistory(history.slice(0, -1));
+                } else { setStep('welcome'); }
+            };
+
+            const handleRestart = () => {
+                setStep('welcome');
+                setCurrentQuestion(0);
+                setScores({});
+                setHistory([]);
+                setResult(null);
+                window.scrollTo(0, 0);
+            };
+
+            const saveAsImage = async () => {
+                if (typeof html2canvas === 'undefined') return;
+                setIsSaving(true);
+                try {
+                    const canvas = await html2canvas(captureRef.current, { scale: 2, backgroundColor: COLORS.bg, useCORS: true });
+                    const link = document.createElement('a');
+                    link.download = `灵魂手稿-${result.name}.png`;
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                } catch (err) { console.error("保存失败", err); }
+                setIsSaving(false);
+            };
+
+            useEffect(() => {
+                if (step === 'result' && result && radarCanvas.current) {
+                    if (chartRef.current) chartRef.current.destroy();
+                    const ctx = radarCanvas.current.getContext('2d');
+                    chartRef.current = new Chart(ctx, {
+                        type: 'radar',
+                        data: {
+                            labels: ['精神批判', '智性逻辑', '审美欲望', '自由漂泊', '意志强度'],
+                            datasets: [{
+                                data: result.stats,
+                                backgroundColor: `${result.theme}25`,
+                                borderColor: result.theme,
+                                borderWidth: 3,
+                                pointBackgroundColor: result.secondary,
+                                pointBorderColor: '#fff',
+                                pointBorderWidth: 2,
+                                pointRadius: 5
+                            }]
+                        },
+                        options: {
+                            scales: {
+                                r: {
+                                    angleLines: { color: 'rgba(0,0,0,0.06)' },
+                                    grid: { color: 'rgba(0,0,0,0.06)' },
+                                    pointLabels: { font: { size: 10, family: 'Noto Serif SC', weight: 'bold' }, color: '#6d6b64' },
+                                    ticks: { display: false },
+                                    min: 0, max: 100
+                                }
+                            },
+                            plugins: { legend: { display: false } }
+                        }
+                    });
+                }
+            }, [step, result]);
+
+            return (
+                <div className="max-w-xl mx-auto px-4 py-8">
+                    {step === 'welcome' && (
+                        <div className="animate-fade-in text-center space-y-12">
+                            <div className="text-left pt-6">
+                                <div className="inline-block px-3 py-1 bg-[#35afcb] text-white text-[9px] tracking-widest font-sans mb-4 transform -rotate-2">
+                                    Chinese Literary Matrix
+                                </div>
+                                <h1 className="text-4xl md:text-5xl font-light leading-tight tracking-widest text-[#3a3833] relative z-10">
+                                    寻找你的<br />
+                                    <span className="font-bold border-b-4 border-[#e8ed2a]">文学原型</span>
+                                </h1>
+                                <p className="mt-4 text-[10px] text-[#6d6b64] tracking-[0.4em] uppercase font-bold opacity-60">对话 20 位中国文学大师</p>
+                            </div>
+                            <div className="w-full max-w-[400px] mx-auto aspect-[4/3.5] relative">
+                                <LibraryIllustration />
+                                <div className="absolute top-[5%] right-0 bg-white px-3 py-2 rounded-sm shadow-md border border-[#dcd8cf] transform rotate-3 max-w-[130px]">
+                                    <p className="text-[10px] text-[#3a3833] leading-tight font-bold italic">“文字不设防，<br/>灵魂自有归处。”</p>
+                                </div>
+                            </div>
+                            <div className="space-y-10">
+                                <p className="text-xs text-[#6d6b64] leading-relaxed tracking-wider px-6 font-light">
+                                    这不仅是一场测试，更是一场关于主体性的认领。穿越 30 组如小说片段般的文学情境，在文字的丛林里认领你的姓名。
+                                </p>
+                                <button onClick={() => setStep('quiz')} className="w-full py-6 bg-[#3a3833] text-white text-[11px] tracking-[0.8em] uppercase hover:bg-black transition-all shadow-2xl active:scale-95 font-bold flex items-center justify-center gap-4">
+                                    开启手稿 / ENTER <Icon name="ArrowRight" size={16} className="text-[#e8ed2a]" />
+                                </button>
+                                <div className="text-[10px] text-gray-400 tracking-[0.3em] font-sans">Curated by @云树cloudtree</div>
+                            </div>
+                        </div>
+                    )}
+
+                    {step === 'quiz' && (
+                        <div className="animate-fade-in space-y-8 text-center">
+                            <div className="flex justify-between items-center border-b border-[#dcd8cf] pb-4">
+                                <button onClick={handleBack} className="flex items-center gap-1 text-[10px] tracking-widest uppercase opacity-40 hover:opacity-100 transition-all text-[#3a3833]">
+                                    <Icon name="ArrowLeft" size={14} /> BACK
+                                </button>
+                                <span className="text-[9px] tracking-[0.6em] uppercase text-[#6d6b64] font-bold">Step {String(currentQuestion + 1).padStart(2, '0')} / 30</span>
+                                <div className="w-10"></div>
+                            </div>
+                            <div className="min-h-[140px] flex items-center justify-center px-4">
+                                <h2 className="text-[16px] md:text-[18px] font-normal leading-[1.8] text-[#3a3833] italic text-justify">
+                                    {QUESTIONS[currentQuestion].text}
+                                </h2>
+                            </div>
+                            <div className="space-y-4 text-left">
+                                {QUESTIONS[currentQuestion].options.map((option, idx) => (
+                                    <button key={idx} onClick={() => handleAnswer(option.target)} className="w-full p-6 bg-white bg-opacity-70 rounded-[12px] border border-[#dcd8cf] hover:border-[#3a3833] transition-all group flex items-center justify-between shadow-sm active:bg-opacity-100">
+                                        <span className="text-[14px] text-[#6d6b64] group-hover:text-[#3a3833] tracking-wide leading-relaxed pr-4">{option.text}</span>
+                                        <Icon name="ChevronRight" size={14} className="opacity-0 group-hover:opacity-100 transition-all text-[#35afcb]" />
+                                    </button>
+                                ))}
+                            </div>
+                            <div className="pt-10 flex justify-center items-center gap-4">
+                                <div className="h-[0.5px] w-48 bg-[#dcd8cf] relative"><div className="h-full bg-[#3a3833] transition-all duration-700" style={{width: `${((currentQuestion+1)/30)*100}%`}}></div></div>
+                            </div>
+                        </div>
+                    )}
+
+                    {step === 'result' && result && (
+                        <div className="animate-fade-in space-y-8">
+                            <div ref={captureRef} className="pb-12 bg-[#f2f0e9] overflow-hidden rounded-2xl result-card relative">
+                                {/* 顶部动态头部 */}
+                                <div className="p-12 text-center relative overflow-hidden" style={{ background: `linear-gradient(135deg, ${result.theme}, ${result.secondary})` }}>
+                                    <div className="absolute top-0 left-0 w-full h-full opacity-10">
+                                        <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
+                                            <path d="M0,0 L100,0 L100,20 Q50,40 0,20 Z" fill="white" />
+                                            <circle cx="90" cy="10" r="15" fill="white" />
+                                        </svg>
+                                    </div>
+                                    <div className="relative z-10 space-y-6">
+                                        <div className="flex justify-center mb-2">
+                                            <div className="px-3 py-1 bg-white bg-opacity-20 text-white text-[8px] tracking-[0.5em] uppercase font-bold border border-white border-opacity-30 rounded-sm">
+                                                Archive Manuscript No. {Math.floor(Math.random()*10000)}
+                                            </div>
+                                        </div>
+                                        <h2 className="text-6xl font-bold text-white tracking-[0.2em] drop-shadow-md">{result.name}</h2>
+                                        <div className="space-y-4">
+                                            <p className="text-sm text-white italic font-light tracking-[0.5em] opacity-90">{result.sub}</p>
+                                            <div className="flex justify-center gap-3">
+                                                <span className="px-4 py-1.5 bg-white text-[10px] font-bold uppercase tracking-widest rounded-full shadow-lg" style={{ color: result.theme }}>灵魂契合度 98%</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="px-6 -mt-10 relative z-20">
+                                    {/* 基因分析卡片 */}
+                                    <div className="p-10 bg-white border border-[#dcd8cf] rounded-3xl shadow-2xl text-center space-y-8 mb-8">
+                                        <div className="flex items-center justify-between border-b border-gray-100 pb-4">
+                                            <span className="text-[10px] font-bold uppercase tracking-[0.4em] text-[#3a3833] opacity-40">文学基因多维对照 / GENE PROFILE</span>
+                                            <Icon name="Compass" size={16} style={{ color: result.theme }} className="opacity-40" />
+                                        </div>
+                                        <div className="aspect-square w-full max-w-[280px] mx-auto">
+                                            <canvas ref={radarCanvas}></canvas>
+                                        </div>
+                                    </div>
+
+                                    {/* 文学史知识板块 */}
+                                    <div className="p-10 bg-white border border-[#dcd8cf] rounded-3xl shadow-sm mb-8 space-y-6 relative overflow-hidden">
+                                        <div className="flex items-center gap-3 border-b border-gray-50 pb-4">
+                                            <Icon name="History" size={18} style={{ color: result.theme }} />
+                                            <span className="text-[11px] font-bold uppercase tracking-[0.3em] text-[#3a3833]">文学史回响 / LITERARY CONTEXT</span>
+                                        </div>
+                                        <p className="text-xs text-[#6d6b64] leading-[2.2] text-justify tracking-wide">
+                                            {result.context}
+                                        </p>
+                                        <div className="absolute -bottom-4 -right-4 opacity-[0.03]" style={{ color: result.theme }}>
+                                            <Icon name="BookOpen" size={120} />
+                                        </div>
+                                    </div>
+
+                                    {/* 核心语录展示 */}
+                                    <div className="relative p-12 bg-white border border-[#dcd8cf] text-center rounded-3xl shadow-sm mb-8 overflow-hidden group">
+                                        <div className="absolute top-0 left-0 w-2 h-full transition-all group-hover:w-3" style={{ backgroundColor: result.theme }}></div>
+                                        <Icon name="Quote" size={36} className="mb-8 opacity-10 mx-auto" style={{ color: result.theme }} />
+                                        <p className="text-2xl md:text-3xl leading-[1.8] text-[#3a3833] font-medium italic mb-8 px-2">“{result.quote}”</p>
+                                        <div className="flex items-center justify-center gap-3 text-[10px] tracking-[0.3em] font-bold opacity-30">
+                                            <div className="h-[1px] w-6 bg-current"></div>
+                                            <span>THE VOICE OF {result.name}</span>
+                                            <div className="h-[1px] w-6 bg-current"></div>
+                                        </div>
+                                    </div>
+
+                                    {/* 深度解析 */}
+                                    <div className="space-y-12 px-2 pt-8">
+                                        <section className="space-y-5">
+                                            <h4 className="text-[11px] font-bold uppercase tracking-[0.6em] text-[#3a3833] flex items-center gap-4">
+                                                <span className="w-8 h-[1px] bg-gray-300"></span>
+                                                <Icon name="Layers" size={14} style={{ color: result.theme }} /> 精神原色 / THE SELF
+                                            </h4>
+                                            <div className="relative">
+                                                <div className="absolute -left-4 top-0 w-1 h-full opacity-20" style={{ backgroundColor: result.theme }}></div>
+                                                <p className="text-[#6d6b64] leading-[2.4] text-sm tracking-widest font-light text-justify px-2 italic">
+                                                    {result.longDesc}
+                                                </p>
+                                            </div>
+                                        </section>
+                                        <section className="space-y-6">
+                                            <h4 className="text-[11px] font-bold uppercase tracking-[0.6em] text-[#3a3833] flex items-center gap-4">
+                                                <span className="w-8 h-[1px] bg-gray-300"></span>
+                                                <Icon name="BookOpen" size={14} style={{ color: result.theme }} /> 灵魂书单 / READING
+                                            </h4>
+                                            <div className="grid gap-5">
+                                                {result.books.map((book, idx) => (
+                                                    <div key={idx} className="bg-white p-8 border border-[#dcd8cf] rounded-2xl shadow-sm relative overflow-hidden group transition-all hover:shadow-md">
+                                                        <div className="absolute top-0 right-0 p-5 opacity-0 group-hover:opacity-10 transition-all -translate-y-2 group-hover:translate-y-0">
+                                                            <Icon name="Bookmark" size={48} style={{ color: result.theme }} />
+                                                        </div>
+                                                        <div className="flex items-start gap-4">
+                                                            <div className="w-1 h-10 rounded-full shrink-0" style={{ backgroundColor: result.theme }}></div>
+                                                            <div>
+                                                                <h5 className="text-[16px] font-bold tracking-widest text-[#3a3833] mb-2">{book.title}</h5>
+                                                                <p className="text-[10px] font-bold uppercase tracking-widest text-[#a4c29b] mb-4">BY {result.name}</p>
+                                                                <p className="text-xs text-[#6d6b64] leading-relaxed italic opacity-80">{book.desc}</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </section>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="pt-8 space-y-4 text-center">
+                                <button onClick={saveAsImage} disabled={isSaving} className="w-full py-6 bg-black text-white text-[11px] font-bold uppercase tracking-[0.6em] flex items-center justify-center gap-3 shadow-2xl active:bg-gray-800 transition-all disabled:opacity-50 rounded-2xl">
+                                    {isSaving ? "正在生成这份唯一的报告..." : <><Icon name="Download" size={16} /> 保存这份灵魂手稿 / SAVE REPORT</>}
+                                </button>
+                                <button onClick={handleRestart} className="w-full py-6 border border-[#3a3833] text-[#3a3833] text-[11px] font-bold uppercase tracking-[0.6em] hover:bg-[#3a3833] hover:text-white transition-all rounded-2xl">
+                                    <Icon name="RefreshCw" size={14} className="inline mr-2" /> 再次校准你的原型
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                    <footer className="mt-20 pt-16 border-t border-[#dcd8cf] text-center space-y-6">
+                        <div className="flex justify-center gap-8 opacity-20 grayscale text-[#3a3833]">
+                            <span className="text-[10px] font-bold">CRITICAL THINKING</span>
+                            <span className="text-[10px] font-bold">AESTHETIC AWAKENING</span>
+                            <span className="text-[10px] font-bold">MENTAL GROWTH</span>
+                        </div>
+                        <div className="space-y-2">
+                            <p className="text-[10px] tracking-[0.6em] uppercase text-[#3a3833] font-bold opacity-60">© 2026 CURATED BY @云树CLOUDTREE</p>
+                            <p className="text-[9px] tracking-[0.3em] uppercase text-[#6d6b64] opacity-30 italic">为精神生长提供坐标 / Mapping Mental Growth</p>
+                        </div>
+                    </footer>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
