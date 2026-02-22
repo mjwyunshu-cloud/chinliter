@@ -22,33 +22,27 @@
             -webkit-font-smoothing: antialiased;
             margin: 0;
         }
-        .animate-fade-in { animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .animate-fade-in { animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
-        .book-spine { transition: all 0.4s ease; }
-        .book-spine:hover { transform: translateY(-8px); filter: brightness(1.05); }
-        .highlight-yellow { background: linear-gradient(180deg, rgba(255,255,255,0) 50%, #e8ed2a 50%); padding: 0 4px; }
+        .highlight-yellow { background: linear-gradient(180deg, rgba(255,255,255,0) 65%, #e8ed2a 65%); padding: 0 4px; }
         .vertical-text { writing-mode: vertical-rl; text-orientation: mixed; }
         
-        /* 兑换码输入框样式 */
         .redeem-input {
-            background: transparent;
-            border: none;
-            border-bottom: 1.5px solid #3a3833;
-            outline: none;
-            text-align: center;
-            letter-spacing: 0.2em;
-            transition: all 0.3s;
+            background: transparent; border: none; border-bottom: 1.5px solid #3a3833;
+            outline: none; text-align: center; letter-spacing: 0.2em; transition: all 0.3s;
         }
         .redeem-input:focus { border-bottom: 2px solid #35afcb; }
         .shake { animation: shake 0.4s ease-in-out; }
         @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
 
+        .abstract-node { transition: all 0.3s ease; cursor: pointer; }
+        .abstract-node:hover { transform: scale(1.1); }
         ::-webkit-scrollbar { width: 0px; background: transparent; }
     </style>
- head>
+</head>
 <body>
-    <div id="root">div>
+    <div id="root"></div>
 
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
@@ -58,11 +52,14 @@
             accentYellow: "#e8ed2a", accentBlue: "#35afcb", accentGreen: "#a4c29b", border: "#dcd8cf"
         };
 
+        // 定义 Icon 组件
         const Icon = ({ name, size = 24, className = "" }) => {
             const paths = {
-                ChevronRight: "M9 18l6-6-6-6", RefreshCw: "M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15",
+                ChevronRight: "M9 18l6-6-6-6", 
+                RefreshCw: "M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15",
                 Quote: "M3 21c3 0 7-1 7-8V5c0-1.25-.75-2-2-2H3c-1.25 0-2 .75-2 2v7c0 1.25.75 2 2 2 0 4-1 6-2 6zm11 0c3 0 7-1 7-8V5c0-1.25-.75-2-2-2h-5c-1.25 0-2 .75-2 2v7c0 1.25.75 2 2 2 0 4-1 6-2 6z",
-                ArrowLeft: "M19 12H5M12 19l-7-7 7-7", ArrowRight: "M5 12h14M12 5l7 7-7 7",
+                ArrowLeft: "M19 12H5M12 19l-7-7 7-7", 
+                ArrowRight: "M5 12h14M12 5l7 7-7 7",
                 BookOpen: "M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z",
                 Layers: "M12 2L2 7l10 5 10-5-10-5z M2 17l10 5 10-5 M2 12l10 5 10-5",
                 Download: "M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4 M7 10l5 5 5-5 M12 15V3",
@@ -78,32 +75,27 @@
             );
         };
 
-        const WRITERS_LIST = {
-            MALE: ["鲁迅", "老舍", "沈从文", "曹雪芹", "王小波", "史铁生", "莫言", "余华", "金庸", "钱钟书"],
-            FEMALE: ["张爱玲", "萧红", "林徽因", "三毛", "杨绛", "丁玲", "王安忆", "残雪", "迟子建", "舒婷"]
-        };
-
         const WRITER_DATA = {
-            "鲁迅": { theme: "#b91c1c", secondary: "#1a1a1a", sub: "黑暗深处的睁眼者", quote: "横眉冷对千夫指，俯首甘为孺子牛。", stats: [98, 50, 70, 50, 85], identity: "你在虚假的和平面前选择拆穿，哪怕真相令人不安。", anxiety: "害怕由于中庸的妥协而陷入精神的彻底麻木。", shadow: "极度的批判可能演化为对他人的不信任感。", longDesc: "你的人生是一场自我解剖。你拒绝修辞的矫饰，文字里流淌着的是在那片焦土上种出的、更具痛感的生命。", context: "鲁迅以‘铁屋子’隐喻开启现代文学，定义了启蒙者在绝望中反抗绝望的悲剧基调。", books: [{title: "《呐喊》", author: "鲁迅", desc: "在铁屋子中发出的第一声呼唤。"}] },
-            "老舍": { theme: "#92400e", secondary: "#451a03", sub: "平民脊梁的守望者", quote: "活着，这就是生活。", stats: [65, 70, 60, 55, 85], identity: "你扎根大地，对平凡人的尊严持有最深刻的同情。", anxiety: "害怕由于时代的剧变而导致文明根基的断裂。", shadow: "对故土的依恋可能转化为某种保守的忧伤。", longDesc: "你在幽默的外壳下记录平民的尊严。你记录正在消失的文明，并为它们的崩塌感到温润深沉的哀伤。", context: "京派文学核心。老舍将北京地域文化与现代文学融合，描写了市民阶层在时代更迭下的宿命。", books: [{title: "《四世同堂》", author: "老舍", desc: "民族魂魄的微观史诗。"}] },
-            "沈从文": { theme: "#0891b2", secondary: "#164e63", sub: "流水与人性的纪录者", quote: "我爱过一个正当最好年龄的人。", stats: [50, 60, 85, 95, 45], identity: "你在物质文明的噪音中退守河边，礼赞原始人性。", anxiety: "害怕由于都市文明的入侵而丧失人性的纯粹。", shadow: "过度的自然主义可能导致对现实残酷性的消解。", longDesc: "你迷恋自然的纯粹。你认为文学不应只有斗争，还应有对情感自然的敬畏与描摹。", context: "湘西抒情文学宗师。以白描式美学对抗虚伪，构建了独属于东方的生命原力。", books: [{title: "《边城》", author: "沈从文", desc: "在湘西烟雨中寻找纯净人性。"}] },
-            "曹雪芹": { theme: "#ca8a04", secondary: "#713f12", sub: "大观园的织梦人", quote: "质本洁来还洁去，强于污淖陷渠沟。", stats: [40, 75, 55, 45, 98], identity: "你洞穿了万物的覆灭，却依然沉醉于记录那一抹华丽。", anxiety: "害怕极致的美在俗世的权力争夺中瞬间消亡。", shadow: "透彻的宿命感容易使人生陷入虚无的终局。", longDesc: "你在字里行间构建幻梦。你坚信美是这个荒唐世界唯一的救赎，哪怕结局是一场白茫茫。", context: "古典文学高峰。曹雪芹实现了从民间叙事到生命美学总结的伟大质变。", books: [{title: "《红楼梦》", author: "曹雪芹", desc: "东方美学的集大成之作。"}] },
-            "王小波": { theme: "#1d4ed8", secondary: "#1e3a8a", sub: "智性趣味的自由者", quote: "一个人只拥有此生此世是不够的。", stats: [88, 98, 65, 90, 75], identity: "你用逻辑消解崇高，认为有趣是人作为主体的底线。", anxiety: "害怕由于规则的愚昧而丧失个人精神的自主性。", shadow: "智性的优越感有时会演变为对他人的冷嘲。", longDesc: "你拒绝任何形式的愚昧。你在荒谬中保持着诚实的幽默感，致力于在无趣的世界里开辟自由疆域。", context: "90年代浪漫主义旗手。通过理性反抗宏大叙事，重构了个体主义的防线。", books: [{title: "《黄金时代》", author: "王小波", desc: "浪漫主义与逻辑的奇妙结合。"}] },
-            "史铁生": { theme: "#4b5563", secondary: "#111827", sub: "生命局限的静思者", quote: "死是一个必然会降临的节日。", stats: [80, 90, 60, 50, 98], identity: "你在废墟上思考生存，在精神上完成了对肉身的突围。", anxiety: "害怕由于身体的残缺而丧失与世界连接的可能。", shadow: "深度的哲思有时会带有一种沉重的宗教仪式感。", longDesc: "你承认肉身的局限。你与死亡达成默契，获得了生的宁静。文学是对生命意义的终极追问。", context: "新时期文学坐标。跨越伤痕，进入了对人类存在局限与灵魂升华的终极追问。", books: [{title: "《我与地坛》", author: "史铁生", desc: "关于生命意义的终极追问。"}] },
-            "张爱玲": { theme: "#4338ca", secondary: "#1e1b4b", sub: "华丽废墟的守望者", quote: "生命是一袭华丽的袍，爬满了蚤子。", stats: [50, 95, 45, 65, 55], identity: "你拥有一双清醒的冷眼，只爱琐碎生活中的尘埃。", anxiety: "害怕在时间的荒野里被世界彻底抛弃。", shadow: "过度的苍凉感使你的人生显得极其疏离与虚无。", longDesc: "你在琐碎和平庸中发现宿命的荒诞。拒绝宏大叙事，只在时间的折痕里捕捉华丽的腐朽。", context: "海派文学异类。专攻人性深处的自私与尴尬，开创了现代文学的‘世俗感性’。", books: [{title: "《传奇》", author: "张爱玲", desc: "在旧梦中寻找真实。"}] },
-            "萧红": { theme: "#7c3aed", secondary: "#4c1d95", sub: "呼兰河畔的漂泊灵性", quote: "那是呼兰河传，那是我的小城故事。", stats: [75, 50, 85, 98, 65], identity: "你有野生的直觉，在荒凉岁月里记录孤独与灵性。", anxiety: "害怕被由于某种定居的状态而丧失灵魂的野性。", shadow: "过度的漂泊感可能使人生在现实层面无法落脚。", longDesc: "你在荒凉的岁月里行走。生命如同一场没有终点的迁徙。你的文字充满了原始的战栗感。", context: "东北作家群核心。以‘灵性笔法’概括底层生命，被公认为超越教条的‘文学洛神’。", books: [{title: "《呼兰河传》", author: "萧红", desc: "用灵性的笔调勾勒生命长卷。"}] },
-            "林徽因": { theme: "#be185d", secondary: "#701a75", sub: "纯净审美的构建者", quote: "你是人间的四月天，笑响点亮了四面风。", stats: [35, 75, 50, 55, 95], identity: "你在理性的建筑与感性的诗歌间寻找高贵的平衡。", anxiety: "害怕由于外部战乱与动荡而毁灭了内心的圣殿。", shadow: "对纯净的追求使你无法直视现实的脓疮。", longDesc: "你守护着审美，认为那是最后的尊严。你在动荡中寻求秩序，追求词藻轻盈与精神纯正。", context: "现代派诗人代表。追求词藻纯净，在战火时代以理性支撑起感性的审美圣殿。", books: [{title: "《你是人间的四月天》", author: "林徽因", desc: "在理性与感性之间捕捉理想。"}] },
-            "三毛": { theme: "#ea580c", secondary: "#7c2d12", sub: "流浪的存在主义者", quote: "如果你给我的，和你给别人的一样，那我就不要了。", stats: [88, 45, 75, 98, 65], identity: "你将生命过成实验，在不断的行走中去发明自我。", anxiety: "害怕被任何人定义，害怕任何形式的安稳定居。", shadow: "极致的自我中心导致与真实社会的脱节。", longDesc: "你拒绝平庸。你的文字带有异域的狂风。你在远方寻找自己的姓名，用一生去抗拒枯萎。", context: "流浪文学缔造者。将生命转化为跨地域艺术，唤醒了对‘真我’的强烈渴望。", books: [{title: "《撒哈拉的故事》", author: "三毛", desc: "对自由最赤裸的呼唤。"}] },
-            "杨绛": { theme: "#166534", secondary: "#064e3b", sub: "洗净铅华的观察家", quote: "我们仨，就剩下我一个了。", stats: [35, 92, 45, 55, 90], identity: "你在平淡中见真意，力量源于内心的安静与坚韧。", anxiety: "害怕过于外向的喧嚣破坏了内心的专注。", shadow: "过度的克制显得对外部冲突缺乏热量。", longDesc: "你在经历了世纪动荡后选择克制。文字是记录温度的日记，是智性之上的守望。", context: "散文‘洗炼派’标志。将历史伤痕转化为温润智慧，笔触洁白不着痕迹。", books: [{title: "《我们仨》", author: "杨绛", desc: "极简文字下的深情力量。"}] },
-            "丁玲": { theme: "#15803d", secondary: "#064e3b", sub: "时代漩涡中的抉择者", quote: "人，只要有一种信念，有所追求，就能忍受。", stats: [92, 65, 55, 50, 95], identity: "你敢于在冲突中直面自我，在历史阵痛中挣扎。", anxiety: "害怕由于过于关注小我而丧失对正义的参与。", shadow: "时代的狂热可能在某些瞬间掩盖了个体真实。", longDesc: "你是投身的火，也是灼烧的铁。展现了极强韧的生命力，探讨了自我解放与救亡间的抉择。", context: "中国现代知识分子从个人主义向革命写实转型的典型。", books: [{title: "《太阳照在桑干河上》", author: "丁玲", desc: "宏大进程中的个体阵痛。"}] },
-            "王安忆": { theme: "#be185d", secondary: "#701a75", sub: "城市日常的织梦人", quote: "在繁华的尘埃里，寻找人世的逻辑。", stats: [45, 90, 75, 55, 80], identity: "你迷恋细枝末节的厚度，在喧嚣中编织逻辑。", anxiety: "害怕城市精神在商业化洪流中丧失逻辑感。", shadow: "过于绵密的细节描写消解了叙事爆发力。", longDesc: "你认为文学是工笔画。在弄堂里绣出史诗，探讨城市精神在不同历史周期中的延续。", context: "海派传人。构建了世俗厚度的‘民间史诗’，重塑了城市的叙事逻辑。", books: [{title: "《长恨歌》", author: "王安忆", desc: "上海弄堂里的情感史诗。"}] },
-            "残雪": { theme: "#581c87", secondary: "#2e1065", sub: "潜意识的实验员", quote: "在极致的纯粹中，寻找灵魂的出口。", stats: [98, 45, 98, 85, 75], identity: "你拒绝与外部现实和解，专攻内部世界的异化感。", anxiety: "害怕外界频繁的接触干扰了梦境的纯粹。", shadow: "彻底的自我封闭使文字充满了战栗的孤独。", longDesc: "你的文字是通向内部深渊的秘径。你是文学中最冷峻、最尖锐的异类。", context: "先锋文学最彻底的存在。专攻内部世界的噩梦感，被誉为‘中国的卡夫卡’。", books: [{title: "《黄泥街》", author: "残雪", desc: "开启东方先锋文学的奇诡梦境。"}] },
-            "迟子建": { theme: "#0369a1", secondary: "#082f49", sub: "冰雪大地的守火者", quote: "在寒冷的北方，灵魂也会开出温暖的花。", stats: [40, 70, 88, 92, 85], longDesc: "你扎根北方边缘。文学是漫长冬夜里的一盏油灯，在极寒中守望最后一点温存。", context: "自然浪漫写作代表。记录少数民族兴衰，为文学注入了阔大的自然精神。", books: [{title: "《额尔古纳河右岸》", author: "迟子建", desc: "对古老文明的绝美挽歌。" }], identity: "你坚信自然的法则高于社会的逻辑。", anxiety: "害怕古老的自然文明被现代铁骑踏碎。", shadow: "过度的怀旧色有时美化了边缘文明苦难。" },
-            "舒婷": { theme: "#e11d48", secondary: "#881337", sub: "独立与温柔的诗人", quote: "我必须是你近旁的一株木棉。", stats: [45, 65, 88, 75, 85], longDesc: "你拥有一种充满力量的温柔。强调自我的独立。文学是对人格自主的宣誓。", context: "朦胧诗派核心。在80年代确立了女性‘平等、独立且深情’的感性宣言。", books: [{title: "《致橡树》", author: "舒婷", desc: "当代情感独立精神的圣经。" }], identity: "你拒绝任何形式的攀附，追求平等独立。", anxiety: "害怕过度情感投入丧失了个体自主性。", shadow: "理性的追求使某些瞬间显得过于清醒。" },
-            "莫言": { theme: "#991b1b", secondary: "#450a0a", sub: "民间幻象的通灵者", quote: "生死疲劳，从荒原到幻象。", stats: [85, 55, 95, 65, 80], identity: "你将民间的粗砺与荒诞升华为绚烂且野性的幻觉。", anxiety: "害怕土地最原始的生命力被现代格式化。", shadow: "血腥与狂想交织可能使感官过载。", longDesc: "你的叙事带有野性的泥土味。挖掘历史最原始的生命力，重构民族的苦难叙事。", context: "寻根文学代表。将民间精神与魔幻现实接轨，获得了全球共鸣。", books: [{title: "《生死疲劳》", author: "莫言", desc: "东方魔幻现实主义巅峰。"}] },
-            "余华": { theme: "#1e293b", secondary: "#020617", sub: "苦难底色的生存者", quote: "活着，活着本身就是唯一的理由。", stats: [75, 85, 50, 60, 98], identity: "你剥离感伤，认为人在苦难面前唯一的尊严就是忍受。", anxiety: "害怕生存的匮乏丧失人的基本属性。", shadow: "冷静到近乎麻木的视角显得冷酷无情。", longDesc: "你用冰冷的笔触书写极端的痛。更关注在那之上的“活着”，那是本能的胜利。", context: "从先锋转向写实。探讨个体如何在绝望中保持最基本的韧性。", books: [{title: "《活着》", author: "余华", desc: "生存意志的最强音。"}] },
-            "金庸": { theme: "#854d0e", secondary: "#451a03", sub: "江湖秩序的重构者", quote: "侠之大者，为国为民。", stats: [75, 65, 55, 75, 92], identity: "你在成人世界编织童话，为混乱现实构建理想道义。", anxiety: "害怕传统侠义精神在现代功利主义面前崩塌。", shadow: "宏大的道德叙事可能忽视了人性的自私。", longDesc: "你不仅在记录传奇。你在为社会规则提供另一种想象，文学是浪漫主义的最后阵地。", context: "武侠文学宗师。将武侠升华为名著，嵌入了深刻的历史反思。", books: [{title: "《射雕英雄传》", author: "金庸", desc: "侠义精神的现代图腾。"}] },
-            "钱钟书": { theme: "#0f766e", secondary: "#134e4a", sub: "围城外的冷眼审视者", quote: "城外的人想冲进去，城里的人想逃出来。", stats: [40, 98, 35, 85, 60], identity: "你追求绝对智性，对文明的尴尬有着精准的解剖。", anxiety: "害怕过于博学陷入无法行动的‘书斋困局’。", shadow: "毒舌的快感可能掩盖了对生命温度的感知。", longDesc: "你享受博学的孤独。文学是智力博弈的游乐场，是对知识分子困局的反讽。", context: "学人小说巅峰。对现代知识分子的精神困局进行了极其精准的解构。", books: [{title: "《围城》", author: "钱钟书", desc: "智性叙事的巅峰。"}] }
+            "鲁迅": { theme: "#b91c1c", secondary: "#1a1a1a", sub: "黑暗深处的睁眼者", status: "启蒙者 / 骨相冷硬", tags: ["国民性解剖", "铁屋呐喊"], quote: "横眉冷对千夫指，俯首甘为孺子牛。", stats: [98, 50, 70, 50, 85], identity: "你在虚假的和平面前选择拆穿，哪怕真相令人不安。", bio: "中国现代文学的开山鼻祖。鲁迅以文字为投枪，解剖民族灵魂。他在冷峻的真实中，撕开了虚伪的温情面纱，在绝望中确立了‘睁眼看’的尊严。", motif: "铁屋之呐喊：即便必死也要觉醒，觉醒本身即是拯救。", anxiety: "害怕由于中庸的妥协而陷入精神的彻底麻木。", shadow: "极度的批判可能演化为对他人的不信任感。", longDesc: "你的人生是一场自我解剖。你拒绝修辞的矫饰，文字里流淌着的是更具痛感的生命。", books: [{title: "《呐喊》", author: "鲁迅", desc: "在铁屋子中发出的第一声呼唤。"}] },
+            "张爱玲": { theme: "#4338ca", secondary: "#1e1b4b", sub: "华丽废墟的守望者", status: "洞察者 / 苍凉底色", tags: ["海派传奇", "世俗物哀"], quote: "生命是一袭华丽的袍，爬满了蚤子。", stats: [50, 95, 45, 65, 55], identity: "你在琐碎日常的折痕里看穿命运。你在繁华中捕捉腐朽。", bio: "现代文学史上最不可忽视的异类。她在华丽中捕捉腐朽，在繁华中看穿幻灭。张爱玲专攻人性深处的自私与尴尬，将世俗悲剧写到了极致。", motif: "华丽袍子上的虱子：美与丑在苍凉底色下达成凄凉共振。", anxiety: "害怕在时间的荒野里被世界彻底抛弃。", shadow: "过度的苍凉感使你的人生显得极其疏离。", longDesc: "你在琐碎和平庸中发现宿命的荒诞。拒绝宏大叙事，只在时间的折痕里捕捉华丽的腐朽。", books: [{title: "《传奇》", author: "张爱玲", desc: "在旧梦中寻找真实。"}] },
+            "王小波": { theme: "#1d4ed8", secondary: "#1e3a8a", sub: "智性趣味的自由者", status: "理侠 / 智性趣味", tags: ["反抗愚昧", "逻辑美学"], quote: "一个人只拥有此生此世是不够的。", stats: [88, 98, 65, 90, 75], identity: "你用逻辑消解崇高，认为有趣是人作为主体的底线。", bio: "当代文坛最独特的自由主义者。他将诗意与逻辑融合，以漫不经心的姿态解构权教条。在他看来，‘有趣’是独立主体最重要的防线。", motif: "诗意世界之反抗：智性的趣味比崇高的口号更具救赎力量。", anxiety: "害怕由于规则的愚昧而丧失个人精神的自主性。", shadow: "智性的优越感有时会演变为对他人的冷嘲。", longDesc: "你拒绝任何形式的愚昧。你在荒谬中保持着诚实的幽默感，致力于在无趣的世界里开辟自由疆域。", books: [{title: "《黄金时代》", author: "王小波", desc: "浪漫主义与逻辑的奇妙结合。"}] },
+            "沈从文": { theme: "#0891b2", secondary: "#164e63", sub: "流水与人性的纪录者", status: "造梦人 / 自然原力", tags: ["湘西神话", "人性本真"], quote: "我爱过一个正当最好年龄的人。", stats: [50, 60, 85, 95, 45], identity: "你在物质文明的噪音中退守河边，礼赞原始人性。", bio: "来自湘西凤凰的文学赤子。他用白描的笔法构建了一个未经污染的人性圣殿。在都市喧嚣外，礼赞原始生命力的纯粹与哀伤。", motif: "自然法则高于社会逻辑：流水带走野花，藏着宇宙最丰饶的真相。", anxiety: "害怕由于都市文明的入侵而丧失人性的纯粹。", shadow: "过度的自然主义可能导致对现实残酷性的消解。", longDesc: "你迷恋自然的纯粹。你认为文学不应只有斗争，还应有对情感自然的敬畏与描摹。", books: [{title: "《边城》", author: "沈从文", desc: "在湘西烟雨中寻找纯净人性。"}] },
+            "史铁生": { theme: "#4b5563", secondary: "#111827", sub: "生命局限的静思者", status: "静思者 / 灵魂突围", tags: ["地坛哲思", "死亡契约"], quote: "死是一个必然会降临的节日。", stats: [80, 90, 60, 50, 98], identity: "你在废墟上思考生存，在精神上完成了对肉身的突围。", bio: "在地坛的残垣断壁间，他完成了对存在局限的终极追问。史铁生是在用病弱躯壳与死神博弈，并在精神上完成了辉煌突围。", motif: "死是一个必然的节日：在必然的局限中，创造出无限宽广的精神空间。", anxiety: "害怕由于身体的残缺而丧失与世界连接的可能。", shadow: "深度的哲思有时会带有一种沉重的宗教仪式感。", longDesc: "你承认肉身的局限。你与死亡达成默契，获得了生的宁静。文学是对生命意义的终极追问。", books: [{title: "《我与地坛》", author: "史铁生", desc: "关于生命意义的终极追问。"}] },
+            "萧红": { theme: "#7c3aed", secondary: "#4c1d95", sub: "呼兰河畔的漂泊灵性", status: "漂泊者 / 野生灵性", tags: ["东北荒野", "洛神遗风"], quote: "那是呼兰河传，那是我的小城故事。", stats: [75, 50, 85, 98, 65], identity: "你有野生的直觉，在荒凉岁月里记录孤独与灵性。", bio: "被誉为‘文学洛神’的天才女性。她的一生是一场仓皇的迁徙，文字是对这迁徙阵痛最敏锐的捕捉。生命粗砺如泥，却透着神辉。", motif: "生死场上的颤动：人类卑微且顽强地生灭，原始野性是文学本质。", anxiety: "害怕被由于某种定居的状态而丧失灵魂的野性。", shadow: "过度的漂泊感可能使人生在现实层面无法落脚。", longDesc: "你在荒凉的岁月里行走。生命如同一场没有终点的迁徙。你的文字充满了原始的战栗感。", books: [{title: "《呼兰河传》", author: "萧红", desc: "用灵性的笔调勾勒生命长卷。"}] },
+            "曹雪芹": { theme: "#ca8a04", secondary: "#713f12", sub: "大观园的织梦人", status: "织梦人 / 繁华幻灭", tags: ["红楼梦", "东方挽歌"], quote: "质本洁来还洁去，强于污淖陷渠沟。", stats: [40, 75, 55, 45, 98], identity: "你洞穿了万物的覆灭，却依然沉醉于记录那一抹华丽。", bio: "中国古典文学终极高峰。他在幻梦中预演文明覆灭，实现了从世俗说书到生命美学总结的伟大质变，写就关于‘美’的永恒祭奠。", motif: "质本洁来还洁去：在必将到来的崩坏前，记录那一抹瞬间华丽。", anxiety: "害怕极致的美在俗世的权力争夺中瞬间消亡。", shadow: "透彻的宿命感容易使人生陷入虚无的终局。", longDesc: "你在字里行间构建幻梦。你坚信美是这个荒唐世界唯一的救赎。", books: [{title: "《红楼梦》", author: "曹雪芹", desc: "东方美学的集大成之作。"}] },
+            "杨绛": { theme: "#166534", secondary: "#064e3b", sub: "洗净铅华的观察家", status: "观察家 / 洁白克制", tags: ["洗炼文风", "生命智慧"], quote: "我们仨，就剩下我一个了。", stats: [35, 92, 45, 55, 90], identity: "你在平淡中见真意，力量源于内心的安静与坚韧。", bio: "文坛最宁静的女性声音。在经历世纪波澜后，用最洁白的笔触记录温润情感。文字没有多余盐分，却饱含生命智慧。", motif: "洗净铅华见真意：在喧嚣边缘守住灯火与书卷，是对时代最温柔的反抗。", anxiety: "害怕过于外向的喧嚣破坏了内心的专注。", shadow: "过度的克制显得对外部冲突缺乏热量。", longDesc: "你在经历了世纪动荡后选择克制。文字是记录温度的日记。", books: [{title: "《我们仨》", author: "杨绛", desc: "极简文字下的深情力量。"}] },
+            "林徽因": { theme: "#be185d", secondary: "#701a75", sub: "纯净审美的构建者", status: "建筑师 / 纯净审美", tags: ["现代派诗歌", "理性结构"], quote: "你是人间的四月天，笑响点亮了四面风。", stats: [35, 75, 50, 55, 95], identity: "你在理性的建筑与感性的诗歌间寻找高贵的平衡。", bio: "动荡时代的建筑师与诗人。用理性框架支撑起感性审美圣殿。追求词藻纯净与精神轻盈，是混乱时代的一抹微光。", motif: "废墟上的优雅：审美是人最后的尊严，用优雅构建内心理想国。", anxiety: "害怕外部战乱与动荡毁灭了内心的圣殿。", shadow: "对纯净的追求使你无法直视现实的脓疮。", longDesc: "你守护着审美，认为那是最后的尊严。你在动荡中寻求秩序。", books: [{title: "《你是人间的四月天》", author: "林徽因", desc: "在理性与感性之间捕捉理想。"}] },
+            "三毛": { theme: "#ea580c", secondary: "#7c2d12", sub: "流浪的存在主义者", status: "实验员 / 浪漫流浪", tags: ["撒哈拉往事", "远方自我"], quote: "如果你给我的，和你给别人的一样，那我就不要了。", stats: [88, 45, 75, 98, 65], identity: "你将生命过成实验，在不断的行走中去发明自我。", bio: "拒绝被任何社会角色定义。她在行走中发明了‘真我’。文字是狂风、是黄沙、是烈火，唤醒整整一代人对远方的渴望。", motif: "身份在路上创造：自由是灵魂唯一的燃料，拒绝平庸的定居。", anxiety: "害怕被任何人定义，害怕任何形式的安稳定居。", shadow: "极致的自我中心导致与真实社会的脱节。", longDesc: "你拒绝平庸。你的文字带有异域的狂风。你在远方寻找自己的姓名。", books: [{title: "《撒哈拉的故事》", author: "三毛", desc: "对自由最赤裸的呼唤。"}] },
+            "钱钟书": { theme: "#0f766e", secondary: "#134e4a", sub: "围城外的冷眼审视者", status: "冷眼人 / 智性巅峰", tags: ["博通中外", "围城困局"], quote: "城外的人想冲进去，城里的人想出来。", stats: [40, 98, 35, 85, 60], identity: "你追求绝对智性，对文明的尴尬有着精准的解剖。", bio: "现代学人小说巅峰。以博通中外视野俯视众生，对人类文明的‘尴尬’有着毒舌般的精准洞察。文字是场智力盛宴。", motif: "围城的死循环：城内外的人相互观望，这种结构性荒谬是人类的宿命。", anxiety: "害怕由于过于博学陷入无法行动的‘书斋困局’。", shadow: "毒舌的快感可能掩盖了对生命温度的感知。", longDesc: "你享受博学的孤独。文学是智力博弈的游乐场，是对知识分子的反讽。", books: [{title: "《围城》", author: "钱钟书", desc: "智性叙事的巅峰。"}] },
+            "丁玲": { theme: "#15803d", secondary: "#064e3b", sub: "时代漩涡中的抉择者", status: "抉择者 / 时代激荡", tags: ["女性主体", "自我解放"], quote: "人，只要有一种信念，有所追求，就能忍受。", stats: [92, 65, 55, 50, 95], identity: "你敢于在冲突中直面自我，在历史阵痛中挣扎进化。", bio: "剧烈挣扎的先锋女性。人生是一次次剧烈重组，文字展现了强韧主体性，在时代漩涡中寻找真实的自我。", motif: "信念的韧度：自我解放不是目的，而是投身宏大进程的起点。", anxiety: "害怕由于过于关注小我而丧失对正义的参与。", shadow: "时代的狂热可能在某些瞬间掩盖了个体真实。", longDesc: "你是投身的火，也是灼烧的铁。展现了极强韧的生命力。", books: [{title: "《太阳照在桑干河上》", author: "丁玲", desc: "宏大进程中的个体阵痛。"}] },
+            "王安忆": { theme: "#be185d", secondary: "#701a75", sub: "城市日常的织梦人", status: "织梦人 / 城市肌理", tags: ["海派传人", "弄堂逻辑"], quote: "在繁华的尘埃里，寻找人世的逻辑。", stats: [45, 90, 75, 55, 80], identity: "你迷恋细枝末节的厚度，在喧嚣中编织情感逻辑。", bio: "文坛最具耐性的工笔画家。在弄堂细碎逻辑中缝制史诗，探讨城市精神在不同历史周期中的延续与断裂，具有极具世俗厚度的民间史感。", motif: "寻找人世的逻辑：城市的灵魂藏在琐碎至极的生存博弈中。", anxiety: "害怕城市精神在商业化洪流中丧失逻辑感。", shadow: "过于绵密的细节描写消解了叙事爆发力。", longDesc: "你认为文学是工笔画。在弄堂里绣出史诗，重塑了城市的叙事逻辑。", books: [{title: "《长恨歌》", author: "王安忆", desc: "上海弄堂里的情感史诗。"}] },
+            "残雪": { theme: "#581c87", secondary: "#2e1065", sub: "潜意识的实验员", status: "梦游者 / 潜意识深渊", tags: ["先锋极致", "异化噩梦"], quote: "在极致的纯粹中，寻找灵魂的出口。", stats: [98, 45, 98, 85, 75], identity: "你拒绝与外部现实和解，专攻内部世界的异化感。", bio: "中国先锋文学中最顽强的存在。彻底切断外部现实反映论，专攻内部异化与噩梦，是文学中最令人战栗的异类。", motif: "潜意识的故乡：现实只是影子，文字是通向黑暗唯一的出口。", anxiety: "害怕外界频繁的接触干扰了梦境的纯粹。", shadow: "彻底的自我封闭使文字充满了战栗的孤独。", longDesc: "你的文字是通向内部深渊的秘径。你是文学中最尖锐的异类。", books: [{title: "《黄泥街》", author: "残雪", desc: "开启东方先锋文学的奇诡梦境。"}] },
+            "迟子建": { theme: "#0369a1", secondary: "#082f49", sub: "冰雪大地的守火者", status: "守火者 / 自然悲悯", tags: ["黑土地", "温情现实"], quote: "在寒冷的北方，灵魂也会开出温暖的花。", stats: [40, 70, 88, 92, 85], identity: "你坚信自然的法则高于社会，在极寒中守望温存。", bio: "扎根冰雪大地的守火人。用神性笔触记录少数民族兴衰。文字如冬夜油灯，散发出阔大且悲悯的自然精神。", motif: "自然法则的神圣：严寒中守望最后的人性善良，是生命对土地的告白。", anxiety: "害怕古老的自然文明被现代铁骑踏碎。", shadow: "过度的怀旧色有时美化了边缘文明苦难。", longDesc: "你扎根北方边缘。文学是漫长冬夜里的一盏油灯。", books: [{title: "《额尔古纳河右岸》", author: "迟子建", desc: "对古老文明的绝美挽歌。" }] },
+            "舒婷": { theme: "#e11d48", secondary: "#881337", sub: "独立与温柔的诗人", status: "诗人 / 独立风骨", tags: ["朦胧诗", "感性宣言"], quote: "我必须是你近旁的一株木棉。", stats: [45, 65, 88, 75, 85], identity: "你拥有一种充满力量的温柔。强调自我的独立与平视。", bio: "朦胧诗派核心。在理性复苏的80年代，确立了女性平等的感性宣言。文字既有女性柔韧，又有思想骨气。", motif: "拒绝攀附的共鸣：我必须是你近旁的一株木棉，作为树的形象和你站在一起。", anxiety: "害怕过度情感投入丧失了个体自主性。", shadow: "理性的追求使某些瞬间显得过于清醒。", longDesc: "文学是对人格自主的宣誓，也是生命深情的赞歌。", books: [{title: "《致橡树》", author: "舒婷", desc: "当代情感独立精神的圣经。" }] },
+            "莫言": { theme: "#991b1b", secondary: "#450a0a", sub: "民间幻象的通灵者", status: "通灵者 / 大地幻象", tags: ["魔幻现实", "高密原力"], quote: "生死疲劳，从荒原到幻象。", stats: [85, 55, 95, 65, 80], identity: "你将民间的粗砺升华为绚烂幻觉。文字带有腥味。", bio: "文坛最具爆发力的想象者。将民间荒诞编织成魔幻现实。文字带有泥土腥味与历史挑衅，挖掘被格式化的生命元神。", motif: "轮回的幻象：权力的宏大叙事下，大地的欲望与牺牲才是永恒。", anxiety: "害怕土地最原始的生命力被现代格式化。", shadow: "血腥与狂想交织可能使感官过载。", longDesc: "挖掘历史最原始的生命力，重构民族的苦难叙事。", books: [{title: "《生死疲劳》", author: "莫言", desc: "东方魔幻现实主义巅峰。"}] },
+            "余华": { theme: "#1e293b", secondary: "#020617", sub: "苦难底色的生存者", status: "见证者 / 生存底色", tags: ["苦难叙事", "活着意志"], quote: "活着，活着本身就是唯一的理由。", stats: [75, 85, 50, 60, 98], identity: "你剥离感伤，认为苦难面前唯一的尊严就是忍受。", bio: "剥离感伤书写苦难。揭示生命最原始本能——忍受。‘活着’不再是动词，而是一座沉重庄严的山。", motif: "活着本身即理由：剥离理想后，那个在苦难中耕耘的影子才是真实。", anxiety: "害怕生存的匮乏丧失人的基本属性。", shadow: "冷静到近乎麻木的视角显得冷酷无情。", longDesc: "更关注在那之上的“活着”，那是本能的胜利。", books: [{title: "《活着》", author: "余华", desc: "生存意志的最强音。"}] },
+            "金庸": { theme: "#854d0e", secondary: "#451a03", sub: "江湖秩序的重构者", status: "守望者 / 古典大义", tags: ["成人童话", "家国情怀"], quote: "侠之大者，为国为民。", stats: [75, 65, 55, 75, 92], identity: "你在成人世界编织童话。你不仅记录传奇。", bio: "新派武侠宗师。将通俗文学提升至历史反思高度。为现代人构建了侠义道德乌托邦，保留了古典风骨。", motif: "知其不可而为之：在权力阴谋的江湖中，个体的选择应基于道义责任。", anxiety: "害怕传统侠义精神在现代功利主义面前崩塌。", shadow: "宏大的道德叙事可能忽视了人性的自私。", longDesc: "你在为社会提供另一种想象，文学是浪漫主义的最后阵地。", books: [{title: "《射雕英雄传》", author: "金庸", desc: "侠义精神的现代图腾。"}] },
+            "老舍": { theme: "#92400e", secondary: "#451a03", sub: "平民脊梁的守望者", status: "守望者 / 平民脊梁", tags: ["北京地域", "市民宿命"], quote: "活着，这就是生活。", stats: [65, 70, 60, 55, 85], identity: "你扎根大地。你对平凡人的尊严持有深刻的同情。", bio: "京派巨匠。扎根胡同尘土，写出民族魂魄史诗。在市民阶层幽默下，深藏对传统文明崩塌的悲痛。", motif: "体面生活的脆弱：文明的消失，往往始于平凡人的无声崩裂。", anxiety: "害怕时代的剧变导致文明根基断裂。", shadow: "对故土的依恋转化为某种保守的忧伤。", longDesc: "你在幽默的外壳下记录平民尊严。记录正在消失的文明。", books: [{title: "《四世同堂》", author: "老舍", desc: "民族魂魄的微观史诗。"}] }
         };
 
         const QUESTIONS = [
@@ -117,12 +109,12 @@
                 { text: "对着雾气哼起歌谣，坚信这份“等不来”本身就是一种修行。", target: "舒婷" },
                 { text: "觉得这流动的河、破船与夕阳，就是宇宙最丰饶的真相。", target: "沈从文" },
                 { text: "在沙滩默默涂写，将孤独归类封存，筑起守望情感的围墙。", target: "杨绛" },
-                { text: "感到腿部的麻木正在蔓延，但深知等待是生命必须交付的壮烈。", target: "史铁生" }
+                { text: "感到腿部的麻木正在蔓延，但深知等待是生命交付的壮烈劳作。", target: "史铁生" }
             ]},
             { id: 3, text: "上海弄堂，月亮像发霉的丝绸。你身着磨损的旗袍，看着月光照进盛着残酒与烟灰的瓷杯。那一刻你觉得：", source: "—— 取材自 张爱玲《金锁记》", options: [
-                { text: "点燃一支烟冷笑：所谓的繁华，不过是这华丽袍子上爬动的蚤子。", target: "张爱玲" },
-                { text: "被剧烈的宿命感击中，想为残破的月光写一首时代的葬歌。", target: "曹雪芹" },
-                { text: "撕开紧绷的盘扣，这弄堂是细密的网，你只想立刻赤脚跑向旷野。", target: "三毛" },
+                { text: "点燃一支烟冷笑：所谓的繁华，不过是这华丽袍子上拼命爬动的蚤子。", target: "张爱玲" },
+                { text: "被剧烈的宿命感击中，想为这残破的月光写一首时代的葬歌。", target: "曹雪芹" },
+                { text: "撕开紧绷的盘扣，这弄堂是细密的网，你只想立刻跑向旷野。", target: "三毛" },
                 { text: "握紧拳头，觉得颓废月色是毒药，文字应当化作刺穿虚伪的投枪。", target: "丁玲" }
             ]},
             { id: 4, text: "你坐在荒废百年的地坛，落叶死寂。你的双腿已无法行走。你会：", source: "—— 取材自 史铁生《我与地坛》", options: [
@@ -179,7 +171,7 @@
                 { text: "腊梅香：高傲、清冷且绝对纯净，不容玷污的味道。", target: "林徽因" },
                 { text: "草木味：自由、潮湿、带着野性且永不停留的味道。", target: "萧红" }
             ]},
-            { id: 13, text: "镜子里看到了死期。那一刻，你真实的反应是：", source: "—— 参考 钱钟书、迟子建对终局的处理", options: [
+            { id: 13, text: "镜子里看到了死期。那一刻，你真实的反应是：", source: "—— 参考 史铁生 对死亡的豁达思考", options: [
                 { text: "精确记录那个时间，在倒计时中以逻辑的方式完成收尾。", target: "钱钟书" },
                 { text: "愤怒地打碎镜子：即便宿命已定，也要在碎片中完成最后狂舞。", target: "史铁生" },
                 { text: "在镜面画满繁复花朵，用审美去覆盖那个残酷的真相。", target: "曹雪芹" },
@@ -248,7 +240,7 @@
             { id: 24, text: "面对厚重如山的传统文化，主角最可能的抉择是：", source: "—— 参考 钱钟书 对古典文化的博通解剖", options: [
                 { text: "背负着这沉重的遗产。在艰难行走中，完成古典守望。", target: "老舍" },
                 { text: "冷静地拆解它。将腐朽符号转化成现代叙事的砖石。", target: "钱钟书" },
-                { text: "亲手烧毁它。因为只有在废墟之上，自由才有最广阔的操场。", target: "残雪" },
+                { text: "亲手烧毁它。只有在废墟之上，自由才有最广阔的操场。", target: "残雪" },
                 { text: "美化它。在墨色与词藻中，重构一个从未存在的极致盛世。", target: "林徽因" }
             ]},
             { id: 25, text: "如果时间可以作为一种实体化的纸张：", source: "—— 参考 王安忆 对城市时间脉络的缝补", options: [
@@ -273,7 +265,7 @@
                 { text: "拥有比我更坚定的反抗精神。甚至反过来审判我精神的软弱。", target: "鲁迅" },
                 { text: "成为我智性的镜像。进行一场永无止境的博弈。", target: "王小波" },
                 { text: "成为理想人格载体。替我在充满污垢的文字里救赎。", target: "林徽因" },
-                { text: "成为命运最冷酷的对照组。在毁灭中映照出主体性尊严。", target: "余华" }
+                { text: "成位命运最冷酷的对照组。在毁灭中映照出主体性尊严。", target: "余华" }
             ]},
             { id: 29, text: "文字在宇宙中最终的形态：", source: "—— 参考 残雪、杨绛的文学追求", options: [
                 { text: "一把永不熄灭的火炬。点燃读者的同时也正在毁灭自己。", target: "鲁迅" },
@@ -289,37 +281,40 @@
             ]}
         ];
 
-        const LibraryIllustration = () => {
-            const shelfOne = []; const shelfTwo = [];
-            // 复刻首页书架 10男10女交错排布
-            for(let i=0; i<5; i++) { 
-                shelfOne.push({ name: WRITERS_LIST.MALE[i], gender: 'm' }); 
-                shelfOne.push({ name: WRITERS_LIST.FEMALE[i], gender: 'f' }); 
-            }
-            for(let i=5; i<10; i++) { 
-                shelfTwo.push({ name: WRITERS_LIST.FEMALE[i], gender: 'f' }); 
-                shelfTwo.push({ name: WRITERS_LIST.MALE[i], gender: 'm' }); 
-            }
+        // 抽象符号组件
+        const AbstractNode = ({ name, isActive, onClick }) => {
             return (
-                <svg viewBox="0 0 400 350" className="w-full h-full drop-shadow-md">
-                    <rect x="45" y="45" width="310" height="270" fill="none" stroke="#3a3833" strokeWidth="2" rx="2" />
-                    <line x1="45" y1="180" x2="355" y2="180" stroke="#3a3833" strokeWidth="1.5" />
-                    <line x1="45" y1="315" x2="355" y2="315" stroke="#3a3833" strokeWidth="3" />
-                    {shelfOne.map((item, i) => (
-                        <g key={`s1-${i}`} transform={`translate(${60 + i * 28}, 80)`} className="book-spine">
-                            <rect width="24" height="100" fill="white" stroke="#3a3833" strokeWidth="1" />
-                            <circle cx="12" cy="15" r="1.5" fill={item.gender === 'm' ? "#35afcb" : "#a4c29b"} opacity="0.6" />
-                            <text x="12" y="55" writingMode="tb" textAnchor="middle" fontSize="10" fill="#3a3833" style={{letterSpacing: '2px', fontWeight: i%2===0 ? 'bold' : 'normal'}}>{item.name}</text>
-                        </g>
-                    ))}
-                    {shelfTwo.map((item, i) => (
-                        <g key={`s2-${i}`} transform={`translate(${60 + i * 28}, 215)`} className="book-spine">
-                            <rect width="24" height="100" fill="white" stroke="#3a3833" strokeWidth="1" />
-                            <circle cx="12" cy="15" r="1.5" fill={item.gender === 'm' ? "#35afcb" : "#a4c29b"} opacity="0.6" />
-                            <text x="12" y="55" writingMode="tb" textAnchor="middle" fontSize="10" fill="#3a3833" style={{letterSpacing: '2px', fontWeight: i%2!==0 ? 'bold' : 'normal'}}>{item.name}</text>
-                        </g>
-                    ))}
-                    <circle cx="340" cy="65" r="20" fill="#e8ed2a" opacity="0.25" />
+                <g className="abstract-node" onClick={onClick}>
+                    <circle cx="20" cy="15" r="3.5" fill={isActive ? "#35afcb" : "#3a383344"} />
+                    <path d="M20 18.5 Q22 28 18 38" stroke={isActive ? "#35afcb" : "#3a383344"} strokeWidth="2" fill="none" strokeLinecap="round" />
+                    <path d="M19 25 L32 18" stroke={isActive ? "#35afcb" : "#3a383344"} strokeWidth="1.2" fill="none" strokeLinecap="round" />
+                    <path d="M18 38 L10 48 L22 52" stroke={isActive ? "#35afcb" : "#3a383344"} strokeWidth="1.2" fill="none" strokeLinecap="round" />
+                    <text x="20" y="65" textAnchor="middle" fontSize="9" fill={isActive ? "#3a3833" : "#3a383333"} fontWeight={isActive ? "bold" : "normal"}>{name}</text>
+                </g>
+            );
+        };
+
+        const LiteraryConstellation = ({ onSelect, activeName }) => {
+            const radiusX = 140; const radiusY = 120;
+            const centerX = 180; const centerY = 160;
+            const masters = Object.keys(WRITER_DATA);
+
+            return (
+                <svg viewBox="0 0 360 320" className="w-full h-full drop-shadow-sm">
+                    <ellipse cx={centerX} cy={centerY} rx={radiusX} ry={radiusY} fill="none" stroke="#3a3833" strokeWidth="0.5" strokeDasharray="4 4" opacity="0.1" />
+                    <g transform="translate(130, 120)" opacity="0.08" style={{mixBlendMode: 'multiply'}}>
+                        <path d="M10 40 Q 30 10 70 35 Q 90 60 50 80 Q 20 70 10 40" fill="#a4c29b" /><path d="M25 45 Q 45 15 85 40 Q 105 65 65 85" fill="#35afcb" />
+                    </g>
+                    {masters.map((name, i) => {
+                        const angle = (i / masters.length) * Math.PI * 2 - Math.PI / 2;
+                        const x = centerX + Math.cos(angle) * radiusX;
+                        const y = centerY + Math.sin(angle) * radiusY;
+                        return (
+                            <g key={name} transform={`translate(${x - 20}, ${y - 30})`}>
+                                <AbstractNode name={name} isActive={activeName === name} onClick={() => onSelect(name)} />
+                            </g>
+                        );
+                    })}
                 </svg>
             );
         };
@@ -331,6 +326,7 @@
             const [history, setHistory] = useState([]);
             const [result, setResult] = useState(null);
             const [isSaving, setIsSaving] = useState(false);
+            const [selectedWriter, setSelectedWriter] = useState("鲁迅");
             const [code, setCode] = useState("");
             const [showError, setShowError] = useState(false);
             
@@ -339,12 +335,8 @@
             const chartRef = useRef(null);
 
             const handleVerify = () => {
-                if (code.toLowerCase().trim() === "qwert") {
-                    setStep('quiz');
-                } else {
-                    setShowError(true);
-                    setTimeout(() => setShowError(false), 500);
-                }
+                if (code.toLowerCase().trim() === "qwert") setStep('quiz');
+                else { setShowError(true); setTimeout(() => setShowError(false), 500); }
             };
 
             const handleAnswer = (target) => {
@@ -401,44 +393,55 @@
                 }
             }, [step, result]);
 
+            const dossier = WRITER_DATA[selectedWriter];
+
             return (
                 <div className="max-w-xl mx-auto px-4 py-8 relative">
                     {step === 'welcome' && (
-                        <div className="animate-fade-in text-center space-y-12">
-                            <div className="text-left pt-6">
-                                <div className="inline-block px-3 py-1 bg-[#35afcb] text-white text-[9px] tracking-widest font-sans mb-4 transform -rotate-2">Chinese Literary Matrix</div>
-                                <h1 className="text-4xl md:text-5xl font-light leading-tight tracking-widest text-[#3a3833]">寻找你的<br /><span className="font-bold border-b-4 border-[#e8ed2a]">文学原型</span></h1>
-                                <p className="mt-4 text-[10px] text-[#6d6b64] tracking-[0.4em] uppercase font-bold opacity-60">对话 20 位中国文学大师</p>
+                        <div className="animate-fade-in text-center space-y-8">
+                            <div className="flex justify-between items-start pt-4">
+                                <div className="inline-block px-2 py-0.5 bg-[#3a3833] text-[#f2f0e9] text-[8px] tracking-widest font-sans uppercase">ARCHETYPE ARCHIVE</div>
+                                <div className="text-[8px] opacity-30 font-bold uppercase tracking-widest">NO. 2026 / SYSTEM 01</div>
                             </div>
                             
-                            {/* 首页核心视觉：复刻双层书架 */}
-                            <div className="w-full max-w-[340px] mx-auto aspect-[4/3.5] relative">
-                                <LibraryIllustration />
-                                <div className="absolute top-[5%] right-0 bg-white px-4 py-2 rounded-sm shadow-md border border-[#dcd8cf] transform rotate-3 max-w-[130px]">
-                                    <p className="text-[10px] text-[#3a3833] leading-tight font-bold italic">“文字不设防，<br/>灵魂自有归处。”</p>
+                            <div className="text-left">
+                                <h1 className="text-4xl md:text-5xl font-bold tracking-[0.1em] text-[#3a3833]">寻找你的<span className="highlight-yellow ml-2">文学原型</span></h1>
+                                <p className="mt-4 text-[9px] text-gray-400 tracking-[0.4em] uppercase font-bold">DIALOGUE WITH 20 MASTERS</p>
+                            </div>
+
+                            <div className="w-full relative py-4">
+                                <LiteraryConstellation onSelect={setSelectedWriter} activeName={selectedWriter} />
+                                <div className="absolute top-[5%] right-0 bg-white px-3 py-1.5 rounded-sm shadow-xl border border-[#dcd8cf] transform rotate-3 max-w-[120px] z-20">
+                                    <p className="text-[9px] text-[#3a3833] leading-tight font-bold italic">“点击名字，<br/>提取绝密档案。”</p>
                                 </div>
                             </div>
 
-                            <div className="space-y-10">
-                                <p className="text-xs text-[#6d6b64] leading-relaxed tracking-wider px-6 font-light text-center">
-                                    穿越 30 组具象的文学抉择。去掉了过度的修辞，只剩下本质的生命底色。在文字的丛林里认领你的姓名。
-                                </p>
-                                
+                            <div className="border-t-2 border-[#3a3833] pt-8 text-left space-y-6">
+                                <div className="flex justify-between items-end">
+                                    <div className="space-y-1">
+                                        <h2 className="text-4xl font-bold tracking-widest text-[#3a3833]">{selectedWriter}</h2>
+                                        <p className="text-[10px] font-bold text-[#35afcb] uppercase tracking-[0.2em]">{dossier.status}</p>
+                                    </div>
+                                    <div className="flex gap-2">{dossier.tags.map(t => <span key={t} className="text-[8px] border border-[#dcd8cf] px-1.5 py-0.5 opacity-50 font-bold">#{t}</span>)}</div>
+                                </div>
+                                <div className="space-y-4">
+                                    <p className="text-[12px] leading-[1.8] text-[#6d6b64] text-justify font-light">{dossier.bio}</p>
+                                    <div className="space-y-1.5">
+                                        <h4 className="text-[9px] font-bold uppercase tracking-widest opacity-30 flex items-center gap-2"><div className="w-3 h-[1px] bg-black"></div> 叙事母题 / MOTIF</h4>
+                                        <p className="text-[12px] leading-relaxed text-[#3a3833] italic bg-white bg-opacity-50 p-3 border-l-2 border-[#e8ed2a]">{dossier.motif}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-8 pt-8">
                                 <div className={`space-y-4 ${showError ? 'shake' : ''}`}>
                                     <div className="flex flex-col items-center gap-2">
                                         <span className="text-[10px] uppercase tracking-[0.3em] opacity-40 font-bold">通行码认证 / ACCESS CODE</span>
-                                        <input 
-                                            type="text" 
-                                            value={code} 
-                                            onChange={(e) => setCode(e.target.value)} 
-                                            className="redeem-input w-48 py-2 text-sm text-center" 
-                                            placeholder="输入代码解锁手稿" 
-                                        />
+                                        <input type="text" value={code} onChange={(e) => setCode(e.target.value)} className="redeem-input w-48 py-2 text-sm text-center" placeholder="请输入通行码解锁测试" />
                                     </div>
                                 </div>
-
-                                <button onClick={handleVerify} className="w-full py-6 bg-[#3a3833] text-white text-[11px] tracking-[0.8em] font-bold shadow-2xl active:scale-95 transition-all">开启漫游 / ENTER</button>
-                                <div className="text-[10px] text-gray-400 tracking-[0.3em]">Curated by @云树cloudtree</div>
+                                <button onClick={handleVerify} className="w-full py-7 bg-[#3a3833] text-white text-[12px] tracking-[0.8em] font-bold shadow-2xl active:scale-95 transition-all">开启漫游 / ENTER</button>
+                                <div className="text-[10px] text-gray-400 tracking-[0.3em] pb-12">Curated by @云树cloudtree</div>
                             </div>
                         </div>
                     )}
@@ -447,7 +450,7 @@
                         <div className="animate-fade-in space-y-8 text-center">
                             <div className="flex justify-between items-center border-b border-[#dcd8cf] pb-4">
                                 <button onClick={handleBack} className="flex items-center gap-1 text-[10px] uppercase opacity-40 hover:opacity-100 transition-all">BACK</button>
-                                <span className="text-[9px] uppercase text-[#6d6b64] font-bold">Step {String(currentQuestion + 1).padStart(2, '0')} / 30</span>
+                                <span className="text-[9px] uppercase text-[#6d6b64] font-bold tracking-widest">Step {String(currentQuestion + 1).padStart(2, '0')} / 30</span>
                                 <div className="w-10"></div>
                             </div>
                             <div className="min-h-[140px] flex flex-col items-center justify-center px-4 space-y-4">
@@ -456,7 +459,7 @@
                             </div>
                             <div className="space-y-4 text-left">
                                 {QUESTIONS[currentQuestion].options.map((option, idx) => (
-                                    <button key={idx} onClick={() => handleAnswer(option.target)} className="w-full p-6 bg-white bg-opacity-70 rounded-[12px] border border-[#dcd8cf] hover:border-[#3a3833] transition-all group active:bg-white">
+                                    <button key={idx} onClick={() => handleAnswer(option.target)} className="w-full p-6 bg-white bg-opacity-70 rounded-[12px] border border-[#dcd8cf] hover:border-[#3a3833] transition-all group active:bg-white text-left">
                                         <span className="text-[14px] text-[#6d6b64] group-hover:text-[#3a3833] leading-relaxed pr-4">{option.text}</span>
                                     </button>
                                 ))}
@@ -474,9 +477,9 @@
                                     </div>
                                     <div className="relative z-10 space-y-6">
                                         <div className="flex justify-center mb-2"><div className="px-3 py-1 bg-white bg-opacity-20 text-white text-[8px] tracking-[0.5em] uppercase font-bold border border-white border-opacity-30 rounded-sm">Archive Manuscript No. {Math.floor(Math.random()*10000)}</div></div>
-                                        <h2 className="text-5xl md:text-6xl font-bold text-white tracking-[0.2em]">{result.name}</h2>
+                                        <h2 className="text-5xl md:text-6xl font-bold text-white tracking-[0.2em] text-center">{result.name}</h2>
                                         <div className="space-y-4">
-                                            <p className="text-sm text-white italic font-light tracking-[0.5em] opacity-90">{result.sub}</p>
+                                            <p className="text-sm text-white italic font-light tracking-[0.5em] opacity-90 text-center">{result.sub}</p>
                                             <div className="flex justify-center gap-3"><span className="px-4 py-1.5 bg-white text-[10px] font-bold uppercase tracking-widest rounded-full shadow-lg" style={{ color: result.theme }}>灵魂契合度 98%</span></div>
                                         </div>
                                     </div>
@@ -487,15 +490,15 @@
                                         <div className="space-y-4 text-left">
                                             <h4 className="text-[11px] font-bold border-b pb-2 text-[#3a3833] opacity-60 uppercase tracking-widest">基因分析 / ANALYSIS</h4>
                                             <div className="space-y-3 text-[10px]">
-                                                <div className="flex justify-between items-center text-gray-400"><span>批判意识</span><div className="w-24 h-1 bg-gray-100"><div className="h-full" style={{width: `${result.stats[0]}%`, backgroundColor: result.theme}}></div></div></div>
-                                                <div className="flex justify-between items-center text-gray-400"><span>智性逻辑</span><div className="w-24 h-1 bg-gray-100"><div className="h-full" style={{width: `${result.stats[1]}%`, backgroundColor: result.theme}}></div></div></div>
-                                                <div className="flex justify-between items-center text-gray-400"><span>审美欲望</span><div className="w-24 h-1 bg-gray-100"><div className="h-full" style={{width: `${result.stats[2]}%`, backgroundColor: result.theme}}></div></div></div>
+                                                <div className="flex justify-between items-center text-gray-400 uppercase"><span>批判意识</span><div className="w-24 h-1 bg-gray-100"><div className="h-full" style={{width: `${result.stats[0]}%`, backgroundColor: result.theme}}></div></div></div>
+                                                <div className="flex justify-between items-center text-gray-400 uppercase"><span>智性逻辑</span><div className="w-24 h-1 bg-gray-100"><div className="h-full" style={{width: `${result.stats[1]}%`, backgroundColor: result.theme}}></div></div></div>
+                                                <div className="flex justify-between items-center text-gray-400 uppercase"><span>审美欲望</span><div className="w-24 h-1 bg-gray-100"><div className="h-full" style={{width: `${result.stats[2]}%`, backgroundColor: result.theme}}></div></div></div>
                                             </div>
                                         </div>
                                         <div className="aspect-square w-full max-w-[180px] mx-auto"><canvas ref={radarCanvas}></canvas></div>
                                     </div>
 
-                                    <div className="p-8 bg-white border border-[#dcd8cf] rounded-3xl shadow-sm mb-8 space-y-6 relative overflow-hidden">
+                                    <div className="p-8 bg-white border border-[#dcd8cf] rounded-3xl shadow-sm mb-8 space-y-6 relative overflow-hidden text-left">
                                         <div className="flex items-center gap-3 border-b border-gray-50 pb-4"><Icon name="History" size={18} style={{ color: result.theme }} /><span className="text-[11px] font-bold uppercase tracking-[0.3em] text-[#3a3833] opacity-60">文学史回响 / CONTEXT</span></div>
                                         <p className="text-xs text-[#6d6b64] leading-[2.2] text-justify tracking-wide italic">{result.context}</p>
                                     </div>
@@ -517,10 +520,10 @@
                                         <section className="space-y-4 text-left">
                                             <h4 className="text-[11px] font-bold uppercase tracking-[0.5em] border-b border-[#dcd8cf] pb-2 text-red-800 opacity-60">核心焦虑与盲区</h4>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-[12px]">
-                                                <div className="p-5 bg-red-50 border border-red-100 rounded">
+                                                <div className="p-5 bg-red-50 border border-red-100 rounded text-left">
                                                     <div className="font-bold mb-1">主导焦虑</div><div className="opacity-70 text-red-900">{result.anxiety}</div>
                                                 </div>
-                                                <div className="p-5 bg-gray-50 border border-gray-100 rounded">
+                                                <div className="p-5 bg-gray-50 border border-gray-100 rounded text-left">
                                                     <div className="font-bold mb-1">阴影面</div><div className="opacity-70">{result.shadow}</div>
                                                 </div>
                                             </div>
@@ -544,7 +547,9 @@
 
                             <div className="pt-8 space-y-4 text-center px-4">
                                 <button onClick={saveAsImage} disabled={isSaving} className="w-full py-6 bg-black text-white text-[11px] font-bold uppercase tracking-[0.6em] shadow-2xl active:scale-95 transition-all rounded-2xl">{isSaving ? "正在生成中..." : "保存手稿报告 / SAVE REPORT"}</button>
-                                <button onClick={handleRestart} className="w-full py-6 border border-[#3a3833] text-[#3a3833] text-[11px] font-bold uppercase tracking-[0.6em] hover:bg-[#3a3833] hover:text-white transition-all rounded-2xl">再次校准原型</button>
+                                <button onClick={handleRestart} className="w-full py-6 border border-[#3a3833] text-[#3a3833] text-[11px] font-bold uppercase tracking-[0.6em] hover:bg-[#3a3833] hover:text-white transition-all rounded-2xl">
+                                    <Icon name="RefreshCw" size={14} className="inline mr-2" /> 再次校准原型
+                                </button>
                             </div>
                         </div>
                     )}
