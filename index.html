@@ -47,6 +47,11 @@
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
 
+        const COLORS = {
+            bg: "#f2f0e9", textMain: "#3a3833", textSecondary: "#6d6b64",
+            accentYellow: "#e8ed2a", accentBlue: "#35afcb", accentGreen: "#a4c29b", border: "#dcd8cf"
+        };
+
         const Icon = ({ name, size = 24, className = "" }) => {
             const paths = {
                 ChevronRight: "M9 18l6-6-6-6", 
@@ -63,7 +68,7 @@
         };
 
         const WRITER_DATA = {
-            "鲁迅": { theme: "#b91c1c", secondary: "#1a1a1a", sub: "拒绝麻木的审视者", status: "启蒙者 / 骨相嶙峋", tags: ["国民性解剖", "铁屋呐喊"], quote: "横眉冷对千夫指，俯首甘为孺子牛。", stats: [98, 70, 40, 60, 95], identity: "你对平庸的妥协持有生理性的敌意。", bio: "中国现代文学开山鼻祖。他用冷峻真实撕开伪善温情，在绝望中确立了清醒者的尊严。", motif: "绝望的反抗：在必败困局中，由于洞察真相而不得不发出的呐喊。", anxiety: "害怕大众的麻木导致真理失声。", shadow: "极度批判演化为对一切的不信任。", longDesc: "你的人生是持续的自我献祭。拒绝粉饰，认为痛感是确认生命存在的唯一标准。你审视时代，更审视自己灵魂深处的幽暗。", books: [{title: "《野草》", author: "鲁迅", desc: "生命在死火与焦土上的自我拉扯。"}] },
+            "鲁迅": { theme: "#b91c1c", secondary: "#1a1a1a", sub: "拒绝麻木的审视者", status: "启蒙者 / 骨相嶙峋", tags: ["国民性解剖", "铁屋呐喊"], quote: "横眉冷对千夫指，俯首甘为孺子牛。", stats: [98, 70, 40, 60, 95], identity: "你对平庸的妥协持有生理性的敌意。", bio: "中国现代文学的开山鼻祖。他用冷峻真实撕开伪善温情，在绝望中确立了清醒者的尊严。", motif: "绝望的反抗：在必败困局中，由于洞察真相而不得不发出的呐喊。", anxiety: "害怕大众的麻木导致真理失声。", shadow: "极度批判演化为对一切的不信任。", longDesc: "你的人生是持续的自我献祭。拒绝粉饰，认为痛感是确认生命存在的唯一标准。你审视时代，更审视自己灵魂深处的幽暗。", books: [{title: "《野草》", author: "鲁迅", desc: "生命在死火与焦土上的自我拉扯。"}] },
             "张爱玲": { theme: "#4338ca", secondary: "#1e1b4b", sub: "华丽废墟的守望者", status: "洞察者 / 苍凉底色", tags: ["海派传奇", "世俗物哀"], quote: "生命是一袭华丽的袍，爬满了蚤子。", stats: [50, 95, 85, 45, 65], identity: "你在极度琐碎里发现了命运的不可抗力。", bio: "现代文学史上最清醒的异类。专攻人性深处的自私与尴尬。在华丽中捕捉腐朽，将世俗生活的悲剧性推向极致。", motif: "文明的荒原：在时代废墟折痕里，捕捉一抹带有霉味的精致感。", anxiety: "害怕平庸生活消磨掉最后一丝灵气。", shadow: "过度清醒导致对他人的极度疏离。", longDesc: "你有一双洞穿繁华的冷眼。你从不试图拯救谁，只是安静记录那些在欲望博弈中枯萎的灵魂。你认为真实即苍凉。", books: [{title: "《传奇》", author: "张爱玲", desc: "旧梦折痕里的人性自私。"}] },
             "沈从文": { theme: "#0891b2", secondary: "#164e63", sub: "流水与人性的纪录者", status: "造梦人 / 自然原力", tags: ["湘西神话", "人性本真"], quote: "我爱过一个正当最好年龄的人。", stats: [40, 60, 95, 80, 55], identity: "你在物质文明的噪音中礼赞原始人性。", bio: "来自湘西的文学赤子。用白描笔法构建未经污染的人性圣殿，礼赞原始生命力的纯粹与哀伤。", motif: "自然的秩序：自然法则高于社会逻辑。流水带走野花，藏着宇宙最丰饶的真相。", anxiety: "害怕现代文明粉碎人性最后温润的角落。", shadow: "过度自然主义导致对现实竞争的逃避。", longDesc: "你迷恋自然的纯粹。认为文学不应只有斗争，还应有对万物、情感自然的敬畏与描摹。你眼中的人带有土地的神性。", books: [{title: "《边城》", author: "沈从文", desc: "在湘西烟雨中寻找未被污染的灵魂。"}] },
             "钱钟书": { theme: "#0f766e", secondary: "#134e4a", sub: "围城外的冷眼审视者", status: "冷眼人 / 智性巅峰", tags: ["博通中外", "围城困局"], quote: "城外的人想冲进去，城里的人想出来。", stats: [65, 98, 55, 85, 50], identity: "你追求绝对智性，对文明的尴尬有着精准解剖。", bio: "现代学人小说巅峰。博通中外视野，毒舌般精准洞察人类‘尴尬’。文字是场智力盛宴，充满讽刺与自省。", motif: "围城的逻辑：人类所有选择都是基于对他者的误解，这是一种结构性荒谬。", anxiety: "害怕由于过于博学陷入‘书斋困局’。", shadow: "毒舌快感掩盖了对生命真实温度的感知。", longDesc: "你享受博学的孤独。看穿了人类在欲望驱动下的种种尴尬表演，并给予了最优雅、最刻薄的注脚。", books: [{title: "《围城》", author: "钱钟书", desc: "现代人精神尴尬与结构性困局的启示录。"}] },
@@ -332,7 +337,7 @@
                 setScores(newScores);
                 if (currentQuestion < 29) setCurrentQuestion(currentQuestion + 1);
                 else {
-                    const topWriterName = Object.keys(newScores).reduce((a, b) => (newScores[a] || 0) > (newScores[b] || 0) ? a : b);
+                    const topWriterName = Object.keys(newScores).reduce((a, b) => (newScores[a] || 0) >= (newScores[b] || 0) ? a : b, "鲁迅");
                     setResult({ ...WRITER_DATA[topWriterName], name: topWriterName });
                     setStep('result');
                     window.scrollTo(0, 0);
