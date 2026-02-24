@@ -5,11 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>文学原型测试 | 灵魂手稿</title>
     
-    <script src="https://cdn.staticfile.org/react/18.2.0/umd/react.production.min.js"></script>
-    <script src="https://cdn.staticfile.org/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <!-- 替换为访问更稳定的全球 CDN 节点 -->
+    <script src="https://fastly.jsdelivr.net/npm/react@18.2.0/umd/react.production.min.js"></script>
+    <script src="https://fastly.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.staticfile.org/Chart.js/3.9.1/chart.min.js"></script>
-    <script src="https://cdn.staticfile.org/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://fastly.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <script src="https://fastly.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@200;500;700;900&display=swap" rel="stylesheet">
 
     <style>
@@ -20,51 +21,42 @@
             color: var(--text-main);
             -webkit-font-smoothing: antialiased;
             margin: 0;
-            font-display: swap;
+            overflow-x: hidden;
         }
+        #loading-screen {
+            position: fixed; inset: 0; background: #f2f0e9; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 9999; transition: opacity 0.5s;
+        }
+        .spinner { width: 40px; height: 40px; border: 2px solid #3a383322; border-top-color: #3a3833; border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
         .animate-fade-in { animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
         .highlight-yellow { background: linear-gradient(180deg, rgba(255,255,255,0) 65%, #e8ed2a 65%); padding: 0 4px; }
-        
-        .redeem-input {
-            background: transparent; border: none; border-bottom: 1.5px solid #3a3833;
-            outline: none; text-align: center; letter-spacing: 0.2em; transition: all 0.3s;
-        }
+        .redeem-input { background: transparent; border: none; border-bottom: 1.5px solid #3a3833; outline: none; text-align: center; letter-spacing: 0.2em; }
         .redeem-input:focus { border-bottom: 2px solid #35afcb; }
         .shake { animation: shake 0.4s ease-in-out; }
         @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
-
-        .abstract-node { transition: all 0.3s ease; cursor: pointer; pointer-events: all; }
+        .abstract-node { transition: all 0.3s ease; cursor: pointer; }
         .abstract-node:hover { transform: scale(1.1); }
         ::-webkit-scrollbar { width: 0px; background: transparent; }
-        .result-card { box-shadow: 0 20px 50px rgba(0,0,0,0.1); }
     </style>
 </head>
 <body>
+    <div id="loading-screen">
+        <div class="spinner"></div>
+        <p style="margin-top: 20px; font-size: 10px; letter-spacing: 0.3em; opacity: 0.5;">正在提取灵魂手稿...</p>
+    </div>
+    
     <div id="root"></div>
 
     <script>
-        // 使用原生 JS 写法，提升加载速度，不再依赖 Babel
-        const { useState, useEffect, useRef, createElement: h } = React;
-
-        const Icon = ({ name, size = 24, className = "" }) => {
-            const paths = {
-                ChevronRight: "M9 18l6-6-6-6", 
-                RefreshCw: "M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15",
-                Quote: "M3 21c3 0 7-1 7-8V5c0-1.25-.75-2-2-2H3c-1.25 0-2 .75-2 2v7c0 1.25.75 2 2 2 0 4-1 6-2 6zm11 0c3 0 7-1 7-8V5c0-1.25-.75-2-2-2h-5c-1.25 0-2 .75-2 2v7c0 1.25.75 2 2 2 0 4-1 6-2 6z",
-                History: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z",
-                X: "M18 6L6 18M6 6l12 12"
-            };
-            return h('svg', {
-                width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor",
-                strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", className: className
-            }, h('path', { d: paths[name] || "" }));
-        };
-
+        // 核心数据库完全锁定
         const WRITER_DATA = {
-            "鲁迅": { theme: "#b91c1c", secondary: "#1a1a1a", sub: "拒绝麻木的审视者", status: "启蒙者 / 骨相嶙峋", tags: ["国民性解剖", "铁屋呐喊"], quote: "横眉冷对千夫指，俯首甘为孺子牛。", stats: [98, 70, 40, 60, 95], identity: "你对平庸的妥协持有生理性的敌意。", bio: "中国现代文学开山鼻祖。冷峻真实撕开伪善温情，在绝望中确立清醒者的尊严。", motif: "绝望的反抗：在必败困局中，由于洞察真相而不得不发出的呐喊。", anxiety: "害怕大众的麻木导致真理失声。", shadow: "极度批判演化为对一切的不信任。", longDesc: "你的人生是持续的自我献祭。拒绝粉饰，认为痛感是确认生命存在的唯一标准。你审视时代，更审视自己灵魂深处的幽暗。", books: [{title: "《野草》", author: "鲁迅", desc: "生命在死火与焦土上的自我拉扯。"}] },
-            "张爱玲": { theme: "#4338ca", secondary: "#1e1b4b", sub: "华丽废墟的守望者", status: "洞察者 / 苍凉底色", tags: ["海派传奇", "世俗物哀"], quote: "生命是一袭华丽的袍，爬满了蚤子。", stats: [50, 95, 85, 45, 65], identity: "你在极度琐碎里发现了命运的不可抗力。", bio: "现代文学史上最清醒的异类。在华丽中捕捉腐朽，将世俗生活的悲剧性推向极致。", motif: "文明的荒原：在时代废墟折痕里，捕捉一抹带有霉味的精致感。", anxiety: "害怕平庸生活消磨掉最后一丝灵气。", shadow: "过度清醒导致对他人的极度疏离。", longDesc: "你有一双洞穿繁华的冷眼。安静记录那些在欲望博弈中枯萎的灵魂。你认为真实即苍凉。", books: [{title: "《传奇》", author: "张爱玲", desc: "旧梦折痕里的人性自私。"}] },
+            "鲁迅": { theme: "#b91c1c", secondary: "#1a1a1a", sub: "拒绝麻木的审视者", status: "启蒙者 / 骨相嶙峋", tags: ["国民性解剖", "铁屋呐喊"], quote: "横眉冷对千夫指，俯首甘为孺子牛。", stats: [98, 70, 40, 60, 95], identity: "你对平庸的妥协持有生理性的敌意。", bio: "中国现代文学的开山鼻祖。他用冷峻真实撕开伪善温情，在绝望中确立了清醒者的尊严。", motif: "绝望的反抗：在必败困局中，由于洞察真相而不得不发出的呐喊。", anxiety: "害怕大众的麻木导致真理失声。", shadow: "极度批判演化为对一切的不信任。", longDesc: "你的人生是持续的自我献祭。拒绝粉饰，认为痛感是确认生命存在的唯一标准。你审视时代，更审视自己灵魂深处的幽暗。", books: [{title: "《野草》", author: "鲁迅", desc: "生命在死火与焦土上的自我拉扯。"}] },
+            "张爱玲": { theme: "#4338ca", secondary: "#1e1b4b", sub: "华丽废墟的守望者", status: "洞察者 / 苍凉底色", tags: ["海派传奇", "世俗物哀"], quote: "生命是一袭华丽的袍，爬满了蚤子。", stats: [50, 95, 85, 45, 65], identity: "你在极度琐碎里发现了命运的不可抗力。", bio: "现代文学史上最清醒的异类。专攻人性深处的自私与尴尬。在华丽中捕捉腐朽，将世俗生活的悲剧性推向极致。", motif: "文明的荒原：在时代废墟折痕里，捕捉一抹带有霉味的精致感。", anxiety: "害怕平庸生活消磨掉最后一丝灵气。", shadow: "过度清醒导致对他人的极度疏离。", longDesc: "你有一双洞穿繁华的冷眼。安静记录那些在欲望博弈中枯萎的灵魂。你认为真实即苍凉。", books: [{title: "《传奇》", author: "张爱玲", desc: "旧梦折痕里的人性自私。"}] },
             "沈从文": { theme: "#0891b2", secondary: "#164e63", sub: "流水与人性的纪录者", status: "造梦人 / 自然原力", tags: ["湘西神话", "人性本真"], quote: "我爱过一个正当最好年龄的人。", stats: [40, 60, 95, 80, 55], identity: "你在物质文明的噪音中礼赞原始人性。", bio: "来自湘西的文学赤子。白描笔法构建未经污染的人性圣殿，礼赞原始生命力的纯粹与哀伤。", motif: "自然的秩序：自然法则高于社会逻辑。流水带走野花，藏着宇宙最丰饶的真相。", anxiety: "害怕现代文明粉碎人性最后温润的角落。", shadow: "过度自然主义导致对现实竞争的逃避。", longDesc: "你迷恋自然的纯粹。认为文学不应只有斗争，还应有对情感自然的敬畏与描摹。", books: [{title: "《边城》", author: "沈从文", desc: "在湘西烟雨中寻找未被污染的灵魂。"}] },
             "钱钟书": { theme: "#0f766e", secondary: "#134e4a", sub: "围城外的冷眼审视者", status: "冷眼人 / 智性巅峰", tags: ["博通中外", "围城困局"], quote: "城外的人想冲进去，城里的人想出来。", stats: [65, 98, 55, 85, 50], identity: "你追求绝对智性，对文明的尴尬有着精准解剖。", bio: "现代学人小说巅峰。毒舌精准洞察人类‘尴尬’。文字是场智力盛宴，充满讽刺与自省。", motif: "围城的逻辑：人类所有选择都是基于对他者的误解，这是一种结构性荒谬。", anxiety: "害怕由于过于博学陷入‘书斋困局’。", shadow: "毒舌快感掩盖了对生命真实温度的感知。", longDesc: "你享受博学的孤独。文学是智力博弈的游乐场。你看穿了人类在欲望驱动下的种种尴尬表演。", books: [{title: "《围城》", author: "钱钟书", desc: "现代人精神尴尬与结构性困局的启示录。"}] },
             "王小波": { theme: "#1d4ed8", secondary: "#1e3a8a", sub: "智性趣味的自由者", status: "理侠 / 逻辑之美", tags: ["反抗愚昧", "有趣灵魂"], quote: "一辈子很长，要找个有趣的人在一起。", stats: [85, 98, 70, 95, 60], identity: "你用逻辑消解崇高，认为有趣是人最后底线。", bio: "自由主义者。将诗意与逻辑完美融合，以漫不经心姿态解构权教条。‘有趣’是防线。", motif: "智性博弈：用幽默和逻辑作为防线，戏谑那些自命不凡的平庸。", anxiety: "害怕群体愚昧丧失个人精神自主性。", shadow: "智性优越感演变为冷嘲，忽视了生命痛感。", longDesc: "拒绝被宏大词义定义。在荒谬中保持诚实幽默。你认为一个人只拥有此生此世是不够的。", books: [{title: "《黄金时代》", author: "王小波", desc: "用理性和有趣对抗整个时代的荒诞。"}] },
@@ -203,4 +195,374 @@
             { id: 20, text: "设计一个注定失败的结局。你会让他临终前：", options: [
                 { text: "正面迎接毁灭。在绝望灰烬中确立主体尊严。", target: "余华" },
                 { text: "消失在漫天大雾。留下绝美且无法弥补的遗憾。", target: "曹雪芹" },
-                { text: "精准解析。让失败成为
+                { text: "精准解析。让失败成为一堂关于智力局限的课。", target: "钱钟书" },
+                { text: "冷笑。用戏谑解构这整场荒唐的命运剧本。", target: "王小波" }
+            ]},
+            { id: 21, text: "整个图书馆着火。你只能抢救出一页纸：", options: [
+                { text: "一张沾满亲人眼泪、记录家庭温度的旧信。", target: "杨绛" },
+                { text: "一张写满逻辑公式、确保智性不灭的数据纸。", target: "钱钟书" },
+                { text: "一张刻满反叛斗争史、能点燃下一次的火种页。", target: "鲁迅" },
+                { text: "一张白纸。在废墟上我们需要重新认领姓名。", target: "残雪" }
+            ]},
+            { id: 22, text: "面对厚重如山的规矩。你最本能的反应是：", options: [
+                { text: "背负。在艰难行走中完成古典守望与传承。", target: "老舍" },
+                { text: "拆解。将腐烂符号转化为现代叙事的砖石。", target: "钱钟书" },
+                { text: "烧毁。只有在焦土之上自由才有广阔操场。", target: "残雪" },
+                { text: "粉饰。在词藻里重构一个从未存在的极美盛世。", target: "林徽因" }
+            ]},
+            { id: 23, text: "关于“爱”。你的第一直觉倾向于：", options: [
+                { text: "两团火苗在冬夜交换温度的契约。", target: "迟子建" },
+                { text: "作为树的形象和你站在一起，平视且独立。", target: "舒婷" },
+                { text: "华丽袍子下的博弈，本质是自私者的收留。", target: "张爱玲" },
+                { text: "让受压迫灵魂瞬间觉醒、产生反抗的力量。", target: "鲁迅" }
+            ]},
+            { id: 24, text: "镜子里突然看到陌生人的脸。你会：", options: [
+                { text: "尖叫。那是潜意识里被我杀死的另一个自我。", target: "残雪" },
+                { text: "逼视。我想知道这个灵魂是否也有不妥协的风骨。", target: "鲁迅" },
+                { text: "淡定。也许这只是宇宙折叠产生的美丽差错。", target: "沈从文" },
+                { text: "涂抹。用胭脂去覆盖，直到镜面变回熟悉的平庸。", target: "张爱玲" }
+            ]},
+            { id: 25, text: "整个文字世界坍塌。只允许保留一个词：", options: [
+                { text: "“但是” —— 代表永远的转折与不服从。", target: "鲁迅" },
+                { text: "“因为” —— 守住因果底线，确保理性。", target: "钱钟书" },
+                { text: "“也许” —— 在朦胧中保留余地，不致刺眼。", target: "沈从文" },
+                { text: "“再会” —— 预示下一场迁徙，灵魂在路上。", target: "三毛" }
+            ]},
+            { id: 26, text: "文学里的“风景”应当是哪种状态？", options: [
+                { text: "布满荆棘的荒原。试炼英雄骨骼的战道。", target: "鲁迅" },
+                { text: "迷雾森林。通往潜意识噩梦的隐喻线索。", target: "残雪" },
+                { text: "半梦半醒的江南。逃离现实的温润避难所。", target: "曹雪芹" },
+                { text: "极北雪原。守望最后一点人性的善良。", target: "迟子建" }
+            ]},
+            { id: 27, text: "最后，如果你可以掌握一种虚构的力量：", options: [
+                { text: "将苦难提炼成黄金。让被侮辱者获得加冕。", target: "莫言" },
+                { text: "在裂缝中挖深井。修补那破碎苍凉的现实。", target: "王安忆" },
+                { text: "在空白处发明引力。让混乱逻辑重新归位。", target: "钱钟书" },
+                { text: "将世界缩减成书柜。而我拥有唯一的钥匙。", target: "杨绛" }
+            ]},
+            { id: 28, text: "面对一个毫无意义、却被盲目崇拜的纪念碑：", options: [
+                { text: "写满注脚。用智性拆解它荒谬的地基。", target: "王小波" },
+                { text: "种下野草。生命比石头更具颠覆力。", target: "迟子建" },
+                { text: "啐一口。麻木的崇拜是对清醒者的侮辱。", target: "鲁迅" },
+                { text: "画进背景。纪念碑只是苍凉景观的补丁。", target: "王安忆" }
+            ]},
+            { id: 29, text: "文字在宇宙终极的形态应该是：", options: [
+                { text: "一把火炬。点燃读者的同时也燃尽自己。", target: "鲁迅" },
+                { text: "一个圆环。首尾接，逻辑自闭且神圣。", target: "杨绛" },
+                { text: "延伸至地平线的、模糊的河流直线。", target: "沈从文" },
+                { text: "虚空中颤动的羽毛。捕捉风的异化。", target: "残雪" }
+            ]},
+            { id: 30, text: "为灵魂选一个物理容器。你选：", options: [
+                { text: "锈迹斑斑、能刺穿厚茧的旧缝衣针。", target: "杨绛" },
+                { text: "在黑夜切开伪善、散发冷光的解剖刀。", target: "鲁迅" },
+                { text: "装满残茶、边缘已经崩损的旧瓷碗。", target: "老舍" },
+                { text: "被狂风吹弯、拒绝折断的野生羽毛。", target: "萧红" }
+            ]}
+        ];
+
+        const { useState, useEffect, useRef, createElement: h } = React;
+
+        const AbstractNode = ({ name, isActive, onClick }) => {
+            return h('g', { className: "abstract-node", onClick: onClick },
+                h('rect', { x: "0", y: "0", width: "40", height: "70", fill: "transparent" }),
+                h('circle', { cx: "20", cy: "15", r: "3.5", fill: isActive ? "#35afcb" : "#3a383344" }),
+                h('path', { d: "M20 18.5 Q22 28 18 38", stroke: isActive ? "#35afcb" : "#3a383344", strokeWidth: "2", fill: "none", strokeLinecap: "round" }),
+                h('path', { d: "M19 25 L32 18", stroke: isActive ? "#35afcb" : "#3a383344", strokeWidth: "1.2", fill: "none", strokeLinecap: "round" }),
+                h('path', { d: "M18 38 L10 48 L22 52", stroke: isActive ? "#35afcb" : "#3a383344", strokeWidth: "1.2", fill: "none", strokeLinecap: "round" }),
+                h('text', { x: "20", y: "65", textAnchor: "middle", fontSize: "9", fill: isActive ? "#3a3833" : "#3a383333", fontWeight: isActive ? "bold" : "normal" }, name)
+            );
+        };
+
+        function App() {
+            const [step, setStep] = useState('welcome');
+            const [currentQuestion, setCurrentQuestion] = useState(0);
+            const [scores, setScores] = useState({});
+            const [history, setHistory] = useState([]);
+            const [result, setResult] = useState(null);
+            const [isSaving, setIsSaving] = useState(false);
+            const [selectedWriter, setSelectedWriter] = useState("鲁迅");
+            const [code, setCode] = useState("");
+            const [showError, setShowError] = useState(false);
+            
+            const radarCanvas = useRef(null);
+            const captureRef = useRef(null);
+            const chartRef = useRef(null);
+
+            useEffect(() => {
+                // 页面加载完成后移除加载遮罩
+                const loader = document.getElementById('loading-screen');
+                if (loader) {
+                    loader.style.opacity = '0';
+                    setTimeout(() => loader.remove(), 500);
+                }
+            }, []);
+
+            const handleVerify = () => {
+                if (code.toLowerCase().trim() === "qwert") setStep('quiz');
+                else { setShowError(true); setTimeout(() => setShowError(false), 500); }
+            };
+
+            const handleAnswer = (target) => {
+                const newScores = { ...scores, [target]: (scores[target] || 0) + 1 };
+                setHistory([...history, { scores, currentQuestion }]);
+                setScores(newScores);
+                if (currentQuestion < 29) {
+                    setCurrentQuestion(currentQuestion + 1);
+                } else {
+                    const topWriterName = Object.keys(newScores).reduce((a, b) => (newScores[a] || 0) >= (newScores[b] || 0) ? a : b, "鲁迅");
+                    setResult(Object.assign({}, WRITER_DATA[topWriterName], { name: topWriterName }));
+                    setStep('result');
+                    window.scrollTo(0, 0);
+                }
+            };
+
+            const handleBack = () => {
+                if (history.length > 0) {
+                    const last = history[history.length - 1];
+                    setScores(last.scores); setCurrentQuestion(last.currentQuestion);
+                    setHistory(history.slice(0, -1));
+                } else setStep('welcome');
+            };
+
+            const handleRestart = () => {
+                setStep('welcome'); setCurrentQuestion(0); setScores({}); setHistory([]); setResult(null); setCode("");
+                window.scrollTo(0, 0);
+            };
+
+            const saveAsImage = async () => {
+                if (typeof html2canvas === 'undefined') return;
+                setIsSaving(true);
+                try {
+                    const canvas = await html2canvas(captureRef.current, { scale: 2, backgroundColor: "#f2f0e9", useCORS: true });
+                    const link = document.createElement('a');
+                    link.download = `灵魂手稿-${result.name}.png`;
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                } catch (err) { console.error(err); }
+                setIsSaving(false);
+            };
+
+            useEffect(() => {
+                if (step === 'result' && result && radarCanvas.current && typeof Chart !== 'undefined') {
+                    if (chartRef.current) chartRef.current.destroy();
+                    const ctx = radarCanvas.current.getContext('2d');
+                    chartRef.current = new Chart(ctx, {
+                        type: 'radar',
+                        data: {
+                            labels: ['批判逻辑', '智性深度', '审美强度', '自由意志', '精神韧性'],
+                            datasets: [{ data: result.stats, backgroundColor: result.theme + "22", borderColor: result.theme, borderWidth: 2, pointRadius: 0 }]
+                        },
+                        options: { scales: { r: { angleLines: { display: false }, grid: { color: 'rgba(0,0,0,0.05)' }, pointLabels: { font: { size: 9, family: 'Noto Serif SC', weight: 'bold' } }, ticks: { display: false }, min: 0, max: 100 } }, plugins: { legend: { display: false } } }
+                    });
+                }
+            }, [step, result]);
+
+            const dossier = WRITER_DATA[selectedWriter];
+
+            if (step === 'welcome') {
+                return h('div', { className: "max-w-xl mx-auto px-4 py-8 relative animate-fade-in" },
+                    h('div', { className: "text-center space-y-8" },
+                        h('div', { className: "flex justify-between items-start pt-4" },
+                            h('div', { className: "inline-block px-2 py-0.5 bg-[#3a3833] text-[#f2f0e9] text-[8px] tracking-widest font-sans uppercase" }, "ARCHETYPE ARCHIVE"),
+                            h('div', { className: "text-[8px] opacity-30 font-bold uppercase tracking-widest" }, "NO. 2026 / SYSTEM 01")
+                        ),
+                        h('div', { className: "text-left" },
+                            h('h1', { className: "text-4xl md:text-5xl font-black tracking-[0.1em] text-[#3a3833]" }, "认领你的", h('span', { className: "highlight-yellow ml-2" }, "文学原型")),
+                            h('p', { className: "mt-4 text-[9px] text-gray-400 tracking-[0.4em] uppercase font-bold tracking-widest" }, "LITERARY NARRATIVE SYSTEM")
+                        ),
+                        h('div', { className: "w-full relative py-4" },
+                            h('svg', { viewBox: "0 0 360 320", className: "w-full h-full drop-shadow-sm", style: { touchAction: 'manipulation' } },
+                                h('ellipse', { cx: 180, cy: 160, rx: 140, ry: 120, fill: "none", stroke: "#3a3833", strokeWidth: "0.5", strokeDasharray: "4 4", opacity: "0.1" }),
+                                h('g', { transform: "translate(130, 120)", opacity: "0.08", style: { mixBlendMode: 'multiply' } },
+                                    h('path', { d: "M10 40 Q 30 10 70 35 Q 90 60 50 80 Q 20 70 10 40", fill: "#a4c29b" }),
+                                    h('path', { d: "M25 45 Q 45 15 85 40 Q 105 65 65 85", fill: "#35afcb" })
+                                ),
+                                Object.keys(WRITER_DATA).map((name, i) => {
+                                    const angle = (i / 20) * Math.PI * 2 - Math.PI / 2;
+                                    const x = 180 + Math.cos(angle) * 140;
+                                    const y = 160 + Math.sin(angle) * 120;
+                                    return h('g', { key: name, transform: `translate(${x - 20}, ${y - 30})` },
+                                        h(AbstractNode, { name, isActive: selectedWriter === name, onClick: () => setSelectedWriter(name) })
+                                    );
+                                })
+                            ),
+                            h('div', { className: "absolute top-[5%] right-0 bg-white px-3 py-1.5 rounded-sm shadow-xl border border-[#dcd8cf] transform rotate-3 max-w-[120px] z-20 pointer-events-none" },
+                                h('p', { className: "text-[9px] text-[#3a3833] leading-tight font-bold italic" }, "“点击名字，", h('br'), "提取绝密档案。”")
+                            )
+                        ),
+                        h('div', { className: "border-t-2 border-[#3a3833] pt-8 text-left space-y-6" },
+                            h('div', { className: "flex justify-between items-end" },
+                                h('div', { className: "space-y-1" },
+                                    h('h2', { className: "text-4xl font-bold tracking-widest text-[#3a3833]" }, selectedWriter),
+                                    h('p', { className: "text-[10px] font-bold text-[#35afcb] uppercase tracking-[0.2em]" }, dossier.status)
+                                ),
+                                h('div', { className: "flex gap-2" }, dossier.tags.map(t => h('span', { key: t, className: "text-[8px] border border-[#dcd8cf] px-1.5 py-0.5 opacity-50 font-bold" }, "#" + t)))
+                            ),
+                            h('div', { className: "space-y-4" },
+                                h('p', { className: "text-[12px] leading-[1.8] text-[#6d6b64] text-justify font-light" }, dossier.bio),
+                                h('div', { className: "space-y-1.5" },
+                                    h('h4', { className: "text-[9px] font-bold uppercase tracking-widest opacity-30 flex items-center gap-2" }, h('div', { className: "w-3 h-[1px] bg-black" }), " 精神坐标 / IDENTITY"),
+                                    h('p', { className: "text-[12px] leading-relaxed text-[#3a3833] italic bg-white bg-opacity-50 p-3 border-l-2 border-[#e8ed2a]" }, dossier.identity)
+                                )
+                            )
+                        ),
+                        h('div', { className: "space-y-8 pt-8" },
+                            h('div', { className: "space-y-4 " + (showError ? 'shake' : '') },
+                                h('div', { className: "flex flex-col items-center gap-2" },
+                                    h('span', { className: "text-[10px] uppercase tracking-[0.3em] opacity-40 font-bold" }, "通行码认证 / ACCESS CODE"),
+                                    h('input', { type: "text", value: code, onChange: (e) => setCode(e.target.value), className: "redeem-input w-48 py-2 text-sm text-center", placeholder: "请输入通行码解锁测试" })
+                                )
+                            ),
+                            h('button', { onClick: handleVerify, className: "w-full py-7 bg-[#3a3833] text-white text-[12px] tracking-[0.8em] font-bold shadow-2xl active:scale-95 transition-all" }, "开启漫游 / ENTER"),
+                            h('div', { className: "text-[10px] text-gray-400 tracking-[0.3em] pb-12" }, "Designed by @云树cloudtree")
+                        )
+                    )
+                );
+            }
+
+            if (step === 'quiz') {
+                return h('div', { className: "max-w-xl mx-auto px-4 py-8 relative animate-fade-in" },
+                    h('div', { className: "space-y-10 text-center py-6" },
+                        h('div', { className: "flex justify-between items-center border-b border-[#dcd8cf] pb-4" },
+                            h('button', { onClick: handleBack, className: "flex items-center gap-1 text-[10px] uppercase opacity-40 hover:opacity-100 transition-all font-bold tracking-widest" }, "BACK"),
+                            h('span', { className: "text-[9px] uppercase text-[#6d6b64] font-black tracking-widest opacity-40" }, "DECISION " + String(currentQuestion + 1).padStart(2, '0') + " / 30"),
+                            h('div', { className: "w-10" })
+                        ),
+                        h('div', { className: "min-h-[160px] flex flex-col items-center justify-center px-4" },
+                            h('h2', { className: "text-[18px] md:text-[21px] font-normal leading-[1.8] text-[#3a3833] text-justify" }, QUESTIONS[currentQuestion].text)
+                        ),
+                        h('div', { className: "space-y-4 text-left" },
+                            QUESTIONS[currentQuestion].options.map((option, idx) => 
+                                h('button', { key: idx, onClick: () => handleAnswer(option.target), className: "w-full p-6 bg-white bg-opacity-70 rounded-sm border border-[#dcd8cf] hover:border-[#3a3833] transition-all group active:bg-white text-left shadow-sm" },
+                                    h('span', { className: "text-[15px] text-[#6d6b64] group-hover:text-[#3a3833] leading-relaxed pr-4" }, option.text)
+                                )
+                            )
+                        ),
+                        h('div', { className: "pt-6 flex justify-center" },
+                            h('div', { className: "h-[1px] w-full bg-[#dcd8cf] relative opacity-50" },
+                                h('div', { className: "h-full bg-[#3a3833] transition-all duration-700", style: { width: ((currentQuestion + 1) / 30 * 100) + "%" } })
+                            )
+                        )
+                    )
+                );
+            }
+
+            if (step === 'result' && result) {
+                return h('div', { className: "max-w-xl mx-auto px-4 py-8 relative animate-fade-in" },
+                    h('div', { className: "space-y-8 pb-12" },
+                        h('div', { ref: captureRef, className: "pb-12 bg-[#f2f0e9] overflow-hidden rounded-2xl result-card relative text-left" },
+                            h('div', { className: "p-12 text-center relative overflow-hidden", style: { background: "linear-gradient(135deg, " + result.theme + ", " + result.secondary + ")" } },
+                                h('div', { className: "absolute top-0 left-0 w-full h-full opacity-10" },
+                                    h('svg', { width: "100%", height: "100%", viewBox: "0 0 100 100", preserveAspectRatio: "none" },
+                                        h('path', { d: "M0,0 L100,0 L100,20 Q50,40 0,20 Z", fill: "white" }),
+                                        h('circle', { cx: "90", cy: "10", r: "15", fill: "white" })
+                                    )
+                                ),
+                                h('div', { className: "relative z-10 space-y-6" },
+                                    h('div', { className: "flex justify-center mb-2" },
+                                        h('div', { className: "px-3 py-1 bg-white bg-opacity-20 text-white text-[8px] tracking-[0.5em] uppercase font-bold border border-white border-opacity-30 rounded-sm" }, "Archetype No. " + Math.floor(Math.random() * 10000))
+                                    ),
+                                    h('h2', { className: "text-5xl md:text-6xl font-bold text-white tracking-[0.2em] text-center" }, result.name),
+                                    h('div', { className: "space-y-4" },
+                                        h('p', { className: "text-sm text-white italic font-light tracking-[0.5em] opacity-90 text-center" }, result.sub),
+                                        h('div', { className: "flex justify-center gap-3" },
+                                            h('span', { className: "px-4 py-1.5 bg-white text-[10px] font-bold uppercase tracking-widest rounded-full shadow-lg", style: { color: result.theme } }, "原型匹配度 98.7%")
+                                        )
+                                    )
+                                )
+                            ),
+                            h('div', { className: "px-6 -mt-10 relative z-20" },
+                                h('div', { className: "grid grid-cols-1 md:grid-cols-2 gap-6 bg-white p-8 border border-[#dcd8cf] rounded-3xl shadow-2xl items-center mb-8" },
+                                    h('div', { className: "space-y-4 text-left" },
+                                        h('h4', { className: "text-[11px] font-bold border-b pb-2 text-[#3a3833] opacity-60 uppercase tracking-widest" }, "叙事基因分析 / ANALYSIS"),
+                                        h('div', { className: "space-y-3 text-[10px]" },
+                                            h('div', { className: "flex justify-between items-center text-gray-400 uppercase" },
+                                                h('span', null, "批判逻辑"),
+                                                h('div', { className: "w-24 h-1 bg-gray-100" }, h('div', { className: "h-full", style: { width: result.stats[0] + "%", backgroundColor: result.theme } }))
+                                            ),
+                                            h('div', { className: "flex justify-between items-center text-gray-400 uppercase" },
+                                                h('span', null, "智性深度"),
+                                                h('div', { className: "w-24 h-1 bg-gray-100" }, h('div', { className: "h-full", style: { width: result.stats[1] + "%", backgroundColor: result.theme } }))
+                                            ),
+                                            h('div', { className: "flex justify-between items-center text-gray-400 uppercase" },
+                                                h('span', null, "审美强度"),
+                                                h('div', { className: "w-24 h-1 bg-gray-100" }, h('div', { className: "h-full", style: { width: result.stats[2] + "%", backgroundColor: result.theme } }))
+                                            )
+                                        )
+                                    ),
+                                    h('div', { className: "aspect-square w-full max-w-[180px] mx-auto" }, h('canvas', { ref: radarCanvas }))
+                                ),
+                                h('div', { className: "p-10 bg-white border border-[#dcd8cf] rounded-3xl shadow-sm mb-8 space-y-6 relative overflow-hidden text-left" },
+                                    h('div', { className: "flex items-center gap-3 border-b border-gray-50 pb-4" },
+                                        h('span', { className: "text-[11px] font-bold uppercase tracking-[0.3em] text-[#3a3833] opacity-60" }, "文学史回响 / CONTEXT")
+                                    ),
+                                    h('p', { className: "text-[13px] text-[#6d6b64] leading-[2.2] text-justify tracking-wide italic" }, result.bio)
+                                ),
+                                h('div', { className: "relative p-10 bg-white border border-[#dcd8cf] text-center rounded-3xl shadow-sm mb-8" },
+                                    h('p', { className: "text-xl md:text-2xl leading-[1.8] font-medium italic mb-6 text-center" }, h('span', { className: "highlight-yellow" }, "“" + result.quote + "”")),
+                                    h('div', { className: "text-[10px] text-[#a4c29b] tracking-widest uppercase font-bold text-center" }, "— " + result.name + " —")
+                                ),
+                                h('div', { className: "space-y-12 px-2 text-left" },
+                                    h('section', { className: "space-y-4" },
+                                        h('h4', { className: "text-[11px] font-bold uppercase tracking-[0.5em] border-b border-[#dcd8cf] pb-2 text-[#3a3833] opacity-60" }, "精神原色 / THE SELF"),
+                                        h('div', { className: "bg-white p-8 border-l-4 space-y-6", style: { borderColor: result.theme } },
+                                            h('p', { className: "text-[14px] leading-relaxed text-[#6d6b64] italic" }, "“" + result.identity + "”"),
+                                            h('p', { className: "text-[14px] leading-relaxed font-light" }, result.longDesc)
+                                        )
+                                    ),
+                                    h('section', { className: "space-y-4 text-left" },
+                                        h('h4', { className: "text-[11px] font-bold uppercase tracking-[0.5em] border-b border-[#dcd8cf] pb-2 text-red-800 opacity-60" }, "核心焦虑与盲区"),
+                                        h('div', { className: "grid grid-cols-1 md:grid-cols-2 gap-4 text-[13px]" },
+                                            h('div', { className: "p-6 bg-red-50 border border-red-100 rounded text-left" },
+                                                h('div', { className: "font-bold mb-2 opacity-60 uppercase text-[10px]" }, "主导焦虑"),
+                                                h('div', { className: "opacity-80 text-red-900" }, result.anxiety)
+                                            ),
+                                            h('div', { className: "p-6 bg-gray-50 border border-gray-100 rounded text-left" },
+                                                h('div', { className: "font-bold mb-2 opacity-60 uppercase text-[10px]" }, "阴影面"),
+                                                h('div', { className: "opacity-70" }, result.shadow)
+                                            )
+                                        )
+                                    ),
+                                    h('section', { className: "space-y-6 text-left" },
+                                        h('h4', { className: "text-[11px] font-bold uppercase tracking-[0.5em] border-b border-[#dcd8cf] pb-2 text-[#3a3833] opacity-60" }, "进阶书单推荐"),
+                                        h('div', { className: "grid gap-4" },
+                                            result.books.map((book, i) => 
+                                                h('div', { key: i, className: "bg-white p-6 border border-[#dcd8cf] rounded-xl shadow-sm text-left" },
+                                                    h('h5', { className: "text-[16px] font-bold mb-1" }, book.title),
+                                                    h('p', { className: "text-[10px] text-[#a4c29b] font-bold mb-3 uppercase" }, "作者: " + book.author),
+                                                    h('p', { className: "text-[13px] text-[#6d6b64] italic leading-relaxed opacity-80" }, book.desc)
+                                                )
+                                            )
+                                        )
+                                    )
+                                )
+                            )
+                        ),
+                        h('div', { className: "pt-8 space-y-4 text-center px-4" },
+                            h('button', { onClick: saveAsImage, disabled: isSaving, className: "w-full py-6 bg-black text-white text-[11px] font-bold uppercase tracking-[0.6em] shadow-2xl active:scale-95 transition-all rounded-2xl" }, isSaving ? "正在生成中..." : "保存手稿报告 / SAVE REPORT"),
+                            h('button', { onClick: handleRestart, className: "w-full py-6 border border-[#3a3833] text-[#3a3833] text-[11px] font-bold uppercase tracking-[0.6em] hover:bg-[#3a3833] hover:text-white transition-all rounded-2xl" },
+                                h('span', null, " 再次校准原型")
+                            )
+                        )
+                    ),
+                    h('footer', { className: "mt-16 pt-16 border-t border-[#dcd8cf] text-center space-y-4" },
+                        h('p', { className: "text-[10px] tracking-[0.6em] uppercase text-[#3a3833] font-bold opacity-60" }, "© 2026 CURATED BY @云树CLOUDTREE")
+                    )
+                );
+            }
+            return null;
+        }
+
+        // 确保 DOM 加载后再运行 React
+        window.addEventListener('DOMContentLoaded', () => {
+            try {
+                const root = ReactDOM.createRoot(document.getElementById('root'));
+                root.render(h(App));
+            } catch (err) {
+                console.error("Render failed:", err);
+                document.body.innerHTML = '<div style="padding:40px; text-align:center; font-family:sans-serif;">系统初始化失败，请尝试刷新页面。</div>';
+            }
+        });
+    </script>
+</body>
+</html>
